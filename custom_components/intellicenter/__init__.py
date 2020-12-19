@@ -152,8 +152,9 @@ class PoolEntity(Entity):
         self._controller = controller
         self._poolObject = poolObject
         self._available = True
+        self._extraStateAttributes = []
 
-        _LOGGER.debug(f"mapping {object}")
+        _LOGGER.debug(f"mapping {poolObject}")
 
     async def async_added_to_hass(self):
         self.async_on_remove(
@@ -216,15 +217,21 @@ class PoolEntity(Entity):
 
         object = self._poolObject
 
+        objectType = object.objtype
+        if object.subtype:
+           objectType+= f"/{object.subtype}"
+
         attributes = { 
             'OBJNAM' : object.objnam,
-            'OBJTYPE' :  object.objtype
+            'OBJTYPE' :  objectType
         }
-        if object.subtype:
-            attributes['SUBTYPE'] = object.subtype
-
+        
         if object.status:
             attributes['Status'] = object.status
+
+        for attribute in self._extraStateAttributes:
+            if object[attribute]:
+                attributes[attribute] = object[attribute]
 
         return attributes
 

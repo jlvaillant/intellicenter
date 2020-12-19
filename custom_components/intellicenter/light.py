@@ -20,12 +20,16 @@ async def async_setup_entry(hass, entry: ConfigEntry, async_add_entities):
 
     for object in controller.model.objectList:
         if object.isALight:
-            _LOGGER.debug(f"mapping {object}")
             lights.append(PoolLight(entry, controller, object))
     async_add_entities(lights)
 
 class PoolLight(PoolEntity, LightEntity):
     """Representation of an Pentair light."""
+
+    def __init__(self, entry: ConfigEntry, controller, poolObject):
+        super().__init__(entry, controller, poolObject)
+        # USE appears to contain extra info like color...
+        self._extraStateAttributes = ['USE']
 
     @property
     def is_on(self) -> bool:
