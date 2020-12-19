@@ -1,0 +1,12 @@
+{
+    "domain": "intellicenter",
+    "name": "Pentair IntelliCenter",
+    "documentation": "https://github.com/jlvaillant/github-custom-component-tutorial",
+    "codeowners": ["@jlvaillant"],
+    "requirements": [],
+    "dependencies": [],
+    "config_flow": true,
+    "zeroconf": [
+        { "type":"_http._tcp.local.", "name":"Pentair*"}
+      ]
+  }

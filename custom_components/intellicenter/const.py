@@ -1,0 +1,2 @@
+DOMAIN = "intellicenter"
+CONTROLLER = "controller"

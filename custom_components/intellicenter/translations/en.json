@@ -1,0 +1,25 @@
+{
+    "config": {
+      "flow_title": "Pentair Intellicenter: {name}",
+      "step": {
+        "user": {
+          "title": "Connect to Pentair Intellicenter",
+          "data": {
+            "host": "IP Address"
+          }
+        },
+        "zeroconf_confirm": {
+          "title": "Connect to your Pentair IntelliCenter",
+          "description": "Do you want to setup \"{name}\" ({host})?"
+        }
+      },
+      "error": {
+        "cannot_connect": "Failed to connect",
+        "unknown": "Unexpected Error"
+      },
+      "abort": {
+        "already_configured": "Device is alreay configured"
+      }
+    }
+  }
+  
