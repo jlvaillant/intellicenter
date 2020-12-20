@@ -1,7 +1,7 @@
 # Pentair Intellicenter for Home Assistant
 
-[![hacs][hacsbadge]][hacs]
-![Project Maintenance][maintenance-shield]
+![hacs][hacsbadge]
+[![GitHub Release][releases-shield]][releases]
 
 ## Installation
 
@@ -48,3 +48,8 @@
 - while I tried to make the code as generic as possible I could only test using
   my own pool configuration. In particular, I do not have covers, chemistry, cascades,
   solar heater, etc... These may work out of the box or not...
+
+[hacs]: https://github.com/custom-components/hacs
+[hacsbadge]: https://img.shields.io/badge/HACS-Custom-orange
+[releases-shield]: https://img.shields.io/github/v/release/jlvaillant/intellicenter
+[releases]: https://github.com/jlvaillant/intellicenter/releases
