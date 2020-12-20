@@ -1,6 +1,6 @@
 # Pentair Intellicenter for Home Assistant
 
-![hacs][hacsbadge]
+[![hacs][hacsbadge]][hacs]
 [![GitHub Release][releases-shield]][releases]
 
 ## Installation
@@ -40,6 +40,12 @@
 - sensors will be created for each sensor in the system (like Water and Air)
   Note that a Solar sensor might also be present even if (like in my case) its value
   is not relevant
+
+### Examples
+
+<img src="device_info.png" width="400"/>
+
+<img src="entities.png" width="400"/>
 
 ### Caveats
 
