@@ -1,6 +1,17 @@
 # Pentair Intellicenter for Home Assistant
 
+[![hacs][hacsbadge]][hacs]
+![Project Maintenance][maintenance-shield]
 
+## Installation
+
+### From HACS
+
+1. Install HACS if you haven't already (see [installation guide](https://hacs.netlify.com/docs/installation/manual)).
+2. Add custom repository `https://github.com/jlvaillant/intellicenter` as "Integration" in the settings tab of HACS.
+3. Find and install "Pentair Intellicenter" integration in HACS's "Integrations" tab.
+4. Restart your Home Assistant.
+5. 'Pentair Intellicenter' should appear thru discovery in your Home Assistant Integration's page
 
 ### Features
 
@@ -19,7 +30,7 @@
         - set to ON to enable that heater, set to OFF otherwise
         - status is 'OFF', 'IDLE' (if heater is enabled but NOT running) or
           'HEATING' is the heater is currently running
-- creates a switch for all circuits marked as "Featured" on the IntelliCenter
+- creates a swicth for all circuits marked as "Featured" on the IntelliCenter
   (for example "Cleaner" or "Spa Blower)
 - for each light (and light show) it creates a Light entity
   Note that color effects are only implemented for IntelliBrite lights

@@ -1,7 +1,7 @@
 {
     "domain": "intellicenter",
     "name": "Pentair IntelliCenter",
-    "documentation": "https://github.com/jlvaillant/github-custom-component-tutorial",
+    "documentation": "https://github.com/jlvaillant/intellicenter",
     "codeowners": ["@jlvaillant"],
     "requirements": [],
     "dependencies": [],
