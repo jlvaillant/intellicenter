@@ -1,63 +1,87 @@
-from .protocol import ICProtocol
-from .model import ALL_KNOWN_ATTRIBUTES
+"""Controller classes for Pentair Intellicenter."""
 
-import logging
-import traceback
 import asyncio
 from asyncio import Future
 from hashlib import blake2b
+import logging
+from typing import Optional
 
-from typing import Any, Callable, Dict, List, Optional
+from .model import ALL_KNOWN_ATTRIBUTES
+from .protocol import ICProtocol
 
 _LOGGER = logging.getLogger(__name__)
 _LOGGER.setLevel(logging.INFO)
 
+
 class CommandError(Exception):
+    """Represents an error in response to a Pentair request."""
+
     def __init__(self, errorCode):
+        """Initialize from a Pentair errorCode."""
         self._errorCode = errorCode
-    
+
     @property
     def errorCode(self):
+        """Return the error code."""
         return self._errorCode
+
 
 # -------------------------------------------------------------------------------------
 
+
 class SystemInfo:
-    def __init__(self, params):
-        self._propName = params['PROPNAME']
-        self._sw_version = params['VER']
-        
+    """Represents minimal information about a Pentair system."""
+
+    def __init__(self, params: dict):
+        """Initialize from a dictionary."""
+        self._propName = params["PROPNAME"]
+        self._sw_version = params["VER"]
+
+        # here we compute what is expected to be a unique_id
+        # from the internal name of the system object
         h = blake2b(digest_size=8)
-        h.update(params['SNAME'].encode())
+        h.update(params["SNAME"].encode())
         self._unique_id = h.hexdigest()
 
     @property
     def propName(self):
+        """Return the name of the 'property' where the system is."""
         return self._propName
 
     @property
     def swVersion(self):
+        """Return the software version of the system."""
         return self._sw_version
 
     @property
     def uniqueID(self):
+        """Return a unique id for that system."""
         return self._unique_id
+
 
 # -------------------------------------------------------------------------------------
 
+
 def prune(obj):
+    """Cleanup a full object tree from undefined parameters."""
+
+    # undefined meaning key == value which is what Pentair returns
     if type(obj) is list:
-        return [ prune(item) for item in obj ]
+        return [prune(item) for item in obj]
     elif type(obj) is dict:
         result = {}
-        for (key,value) in obj.items():
+        for (key, value) in obj.items():
             if key != value:
                 result[key] = prune(value)
         return result
     return obj
-    
+
+
 class BaseController:
+    """A basic controller connecting to a Pentair system."""
+
     def __init__(self, host, port=6681, loop=None):
+        """Initialize the controller."""
         self._host = host
         self._port = port
         self._loop = loop
@@ -71,29 +95,41 @@ class BaseController:
 
     @property
     def host(self):
+        """Return the host the controller is connected to."""
         return self._host
 
-    def connection_made(self,protocol,transport):
+    def connection_made(self, protocol, transport):
+        """Handle the callback from the protocol."""
         _LOGGER.debug(f"Connection established to {self._host}")
 
     def connection_lost(self, exc):
-        self.stop() # should that be a cleanup instead?
+        """Handle the callback from the protocol."""
+        self.stop()  # should that be a cleanup instead?
         if self._diconnectedCallback:
             self._diconnectedCallback(self, exc)
 
     async def start(self) -> None:
+        """Connect to the Pentair system and retrieves some system information."""
         self._transport, self._protocol = await self._loop.create_connection(
-            lambda: ICProtocol(self),
-            self._host, self._port)
+            lambda: ICProtocol(self), self._host, self._port
+        )
 
         # we start by requesting a few attributes from the SYSTEM object
         # and therefore validate that the system connected is indeed a IntelliCenter
-        msg = await self.sendCmd('GetParamList', {'condition': 'OBJTYP=SYSTEM',
-            'objectList': [{'objnam': 'INCR', 'keys': ['SNAME', 'VER', 'PROPNAME']}]})
+        msg = await self.sendCmd(
+            "GetParamList",
+            {
+                "condition": "OBJTYP=SYSTEM",
+                "objectList": [
+                    {"objnam": "INCR", "keys": ["SNAME", "VER", "PROPNAME"]}
+                ],
+            },
+        )
 
-        self._systemInfo = SystemInfo(msg['objectList'][0]['params'])
+        self._systemInfo = SystemInfo(msg["objectList"][0]["params"])
 
     def stop(self):
+        """Stop all activities from this controller and disconnect."""
         if self._transport:
             for request in self._requests.values():
                 request.cancel()
@@ -101,12 +137,13 @@ class BaseController:
             self._transport = None
             self._protocol = None
 
-    def sendCmd(self, cmd, extra=None, waitForResponse = True) -> Optional[Future]:
+    def sendCmd(self, cmd, extra=None, waitForResponse=True) -> Optional[Future]:
         """
-            sends a command with optional extra parameters to the system
-            if waitForResponse is True, a Future is created and returned
-            so either call resp = await controller.sendCmd(cmd,extra)
-            or controller.sendCmd(cmd,extra,waitForResponse=False)
+        Send a command with optional extra parameters to the system.
+
+        if waitForResponse is True, a Future is created and returned
+        so either call resp = await controller.sendCmd(cmd,extra)
+        or controller.sendCmd(cmd,extra,waitForResponse=False)
         """
 
         _LOGGER.debug(f"CONTROLLER: sendCmd: {cmd} {extra} {waitForResponse}")
@@ -120,44 +157,67 @@ class BaseController:
 
         return future
 
-    def requestChanges(self, objnam: str, changes: dict, waitForResponse = True) -> Future:
-        """ submits a change for a given object.  """
-        return self.sendCmd("SETPARAMLIST",{"objectList":[{"objnam":objnam,"params":changes}]}, waitForResponse = waitForResponse)
+    def requestChanges(
+        self, objnam: str, changes: dict, waitForResponse=True
+    ) -> Future:
+        """Submit a change for a given object."""
+        return self.sendCmd(
+            "SETPARAMLIST",
+            {"objectList": [{"objnam": objnam, "params": changes}]},
+            waitForResponse=waitForResponse,
+        )
 
     async def getAllObjects(self, attributeList: list = ALL_KNOWN_ATTRIBUTES):
-        result = await self.sendCmd('GetParamList', {
-            'condition': '',
-            'objectList': [{'objnam': 'INCR', 'keys': attributeList}]
-        })
-        return prune(result['objectList'])
+        """Return the values of given attributes for all objects in the system."""
 
-    async def getQuery(self, queryName: str, arguments : str = ''):
-        result = await self.sendCmd('GetQuery', {'queryName':queryName,"arguments":arguments})
-        return result['answer']
+        result = await self.sendCmd(
+            "GetParamList",
+            {
+                "condition": "",
+                "objectList": [{"objnam": "INCR", "keys": attributeList}],
+            },
+        )
+
+        # since we might have asked for more attributes than any given object
+        # might define, we prune the resulting tree from these 'undefined' values
+        return prune(result["objectList"])
+
+    async def getQuery(self, queryName: str, arguments: str = ""):
+        """Return the result of a Query."""
+        result = await self.sendCmd(
+            "GetQuery", {"queryName": queryName, "arguments": arguments}
+        )
+        return result["answer"]
 
     def getCircuitNames(self):
-        return self.getQuery('GetCircuitNames')
+        """Return the list of circuit names."""
+        return self.getQuery("GetCircuitNames")
 
     async def getCircuitTypes(self):
-        """ returns a dictionnary: key: circuit's SUBTYP , value: 'friendly' readable string """
+        """Return a dictionary: key: circuit's SUBTYP , value: 'friendly' readable string."""
 
-        return { v['systemValue']: v['readableValue'] for v in await self.getQuery('GetCircuitTypes')}
+        return {
+            v["systemValue"]: v["readableValue"]
+            for v in await self.getQuery("GetCircuitTypes")
+        }
 
     def getHardwareDefinition(self):
-        return prune(self.getQuery('GetHardwareDefinition'))
+        """Return the full hardware definition of the system."""
+        return prune(self.getQuery("GetHardwareDefinition"))
 
     def getConfiguration(self):
-        return self.getQuery('GetConfiguration')
+        """Return the current 'configuration' of the system."""
+        return self.getQuery("GetConfiguration")
 
     def receivedMessage(self, msg_id: str, command: str, response: str, msg: dict):
-        """
-            callback for a incoming message
-            msd_id is the id of the incoming message
-            response is the success (200) or error code or None (if this was a notification)
-            msg is the while message as a dictionnary (parsing of the JSON object)
+        """Handle the callback for a incoming message.
+
+        msd_id is the id of the incoming message
+        response is the success (200) or error code or None (if this was a notification)
+        msg is the while message as a dictionary (parsing of the JSON object)
         """
 
-        future = self._requests.pop(msg_id,0)
+        future = self._requests.pop(msg_id, 0)
 
         # here future can be either:
         #  - 0 if there was no corresponding request matching this response
@@ -165,54 +225,55 @@ class BaseController:
         #  - a future is the sender of the request wanted to get the results
         #  - None is the sender declined to wait for the response (in sendCmd)
 
-        _LOGGER.debug(f"CONTROLLER: receivedMessage: {msg_id} {command} {response} {future}")
-        
+        _LOGGER.debug(
+            f"CONTROLLER: receivedMessage: {msg_id} {command} {response} {future}"
+        )
+
         if not future == 0:
             if future:
-                if response == '200':
+                if response == "200":
                     future.set_result(msg)
                 else:
                     future.set_exception(CommandError(response))
             else:
                 _LOGGER.debug(f"ignoring response for msg_id {msg_id}")
-        elif response is None or response == '200':
-            self.processMessage(command,msg)
+        elif response is None or response == "200":
+            self.processMessage(command, msg)
         else:
             _LOGGER.warning(f"CONTROLLER: error {response} : {msg}")
 
     def processMessage(self, command: str, msg):
-        """ place holder for handling notifications """
+        """Process a notification message."""
         pass
 
     @property
     def systemInfo(self):
+        """Return the (cached) system information."""
         return self._systemInfo
+
 
 # -------------------------------------------------------------------------------------
 
+
 class ModelController(BaseController):
-    def __init__(self, host, model, port=6681, loop=None,
-                 connectionTimeout=10):
-        super().__init__(host,port,loop)
+    """A controller creating and updating a PoolModel."""
+
+    def __init__(self, host, model, port=6681, loop=None):
+        """Initialize the controller."""
+        super().__init__(host, port, loop)
         self._model = model
-        self._connectionTimeout = connectionTimeout
 
         self._systemInitialized = False
 
         self._updatedCallback = None
 
-
     @property
     def model(self):
+        """Return the model this controller manages."""
         return self._model
 
-    def connection_made(self,protocol,transport):
-        _LOGGER.info(f"Connection establishef to {self._host}")
-
-
-
     async def start(self):
-
+        """Start the controller, fetch and start monitoring the model."""
         await super().start()
 
         # with the connection now established we first retrieve all the objects
@@ -227,32 +288,30 @@ class ModelController(BaseController):
 
         try:
             # now that I have my object loaded in the model
-            # build a query to monitors all their relevant attibutes
+            # build a query to monitors all their relevant attributes
 
             query = []
             for object in self.model:
                 attributes = object.attributes
-                if (attributes):
-                    query.append(
-                        {'objnam': object.objnam, 'keys': attributes})
+                if attributes:
+                    query.append({"objnam": object.objnam, "keys": attributes})
                 # a query too large can choke the protocol...
                 # we split them in maximum of 30 objects (arbitrary but seems to work)
                 if len(query) >= 30:
-                    msg = await self.sendCmd('RequestParamList', {"objectList": query})
-                    self.receivedNotifyList(msg['objectList'])
+                    msg = await self.sendCmd("RequestParamList", {"objectList": query})
+                    self.receivedNotifyList(msg["objectList"])
                     query = []
 
             # and issue the remaining elements if any
-            if (query):
-                msg = await self.sendCmd('RequestParamList', {"objectList": query})
-                self.receivedNotifyList(msg['objectList'])
+            if query:
+                msg = await self.sendCmd("RequestParamList", {"objectList": query})
+                self.receivedNotifyList(msg["objectList"])
 
         except Exception as err:
-            traceback.print_exc()
-
+            raise err
 
     def receivedQueryResult(self, queryName: str, answer):
-        """ handler for all the 'getQuery' responses """
+        """Handle the result of all 'getQuery' responses."""
 
         # none are used by default
         # see Pentair protocol documentation for details
@@ -261,23 +320,25 @@ class ModelController(BaseController):
         pass
 
     def receivedNotifyList(self, changes):
-        """ handle the notifications from IntelliCenter when tracked objects are modified """
+        """Handle the notifications from IntelliCenter when tracked objects are modified."""
 
         try:
             # apply the changes back to the model
 
             updatedList = self._model.processUpdates(changes)
 
-            _LOGGER.debug(f"CONTROLLER: received NotifyList: {len(updatedList)} objects updated")
+            _LOGGER.debug(
+                f"CONTROLLER: received NotifyList: {len(updatedList)} objects updated"
+            )
 
             if self._updatedCallback:
-                    self._updatedCallback(self, updatedList)
+                self._updatedCallback(self, updatedList)
 
         except Exception as err:
-            _LOGGER.error("CONTROLLER: receivedNotifyList {err}")
+            _LOGGER.error(f"CONTROLLER: receivedNotifyList {err}")
 
     def receivedWriteParamList(self, changes):
-        """ handler for response to a requested change to an object """
+        """Handle the response to a change requested on an object."""
 
         # similar to the receivedNotifyList except
         try:
@@ -286,45 +347,47 @@ class ModelController(BaseController):
             if self._updatedCallback:
                 self._updatedCallback(self, updatedList)
         except Exception as err:
-            _LOGGER.error("CONTROLLER: receivedWriteParamList {err}")
+            _LOGGER.error(f"CONTROLLER: receivedWriteParamList {err}")
 
-    def receivedSystemConfig(self,objectList):
-        """ triggered by the response for the initial request for all objects """
-        
-        _LOGGER.debug(f"CONTROLLER: received SystemConfig for {len(objectList)} object(s)")
+    def receivedSystemConfig(self, objectList):
+        """Handle the response for the initial request for all objects."""
+
+        _LOGGER.debug(
+            f"CONTROLLER: received SystemConfig for {len(objectList)} object(s)"
+        )
 
         for object in prune(objectList):
-            try:
-                self.model.addObject(object['objnam'], object['params'])
-            except Exception as err:
-                _LOGGER.error(f"problem creating object from {object}")
-                # traceback.print_exc()
-
+            self.model.addObject(object["objnam"], object["params"])
 
     def processMessage(self, command: str, msg):
-        """asyncio callback for a incoming message."""
+        """Handle the callback for an incoming message."""
 
         _LOGGER.debug(f"CONTROLLER: received {command} response: {msg}")
 
         try:
-            if (command == 'SendQuery'):
-                self.receivedQueryResult(msg['queryName'], msg['answer'])
-            elif (command == 'NotifyList'):
-                self.receivedNotifyList(msg['objectList'])
-            elif (command == 'WriteParamList'):
-                self.receivedWriteParamList(msg['objectList'][0]['changes'])
-            elif (command == 'SendParamList'):
-                self.receivedSystemConfig(msg['objectList'])
+            if command == "SendQuery":
+                self.receivedQueryResult(msg["queryName"], msg["answer"])
+            elif command == "NotifyList":
+                self.receivedNotifyList(msg["objectList"])
+            elif command == "WriteParamList":
+                self.receivedWriteParamList(msg["objectList"][0]["changes"])
+            elif command == "SendParamList":
+                self.receivedSystemConfig(msg["objectList"])
             else:
                 print(f"ignoring {command}")
         except Exception as err:
             _LOGGER.error(f"error {err} while processing {msg}")
             # traceback.print_exc()
 
+
 # -------------------------------------------------------------------------------------
 
+
 class ConnectionHandler:
-    def __init__(self,controller, timeBetweenReconnects = 30):
+    """Helper class to recover the connect/disconnect/reconnect cycle of a controller."""
+
+    def __init__(self, controller, timeBetweenReconnects=30):
+        """Initialize the handler."""
         self._controller = controller
 
         self._starterTask = None
@@ -335,26 +398,28 @@ class ConnectionHandler:
 
         controller._diconnectedCallback = self._diconnectedCallback
 
-        if hasattr(controller,'_updatedCallback'):
+        if hasattr(controller, "_updatedCallback"):
             controller._updatedCallback = self.updated
 
     @property
     def controller(self):
+        """Return the controller the handler manages."""
         return self._controller
 
     async def start(self):
+        """Start the handler loop."""
         if not self._starterTask:
             self._starterTask = asyncio.create_task(self._starter())
-    
+
     def _next_delay(self, currentDelay: int) -> int:
-        """
-            used to compute the delay before the next reconnection attempt
-            default is exponential backoff with a 1.5 factor
+        """Compute the delay before the next reconnection attempt.
+
+        default is exponential backoff with a 1.5 factor
         """
         return int(currentDelay * 1.5)
 
-    async def _starter(self,initialDelay = 0):
-
+    async def _starter(self, initialDelay=0):
+        """Attempt to start the controller."""
         started = False
         delay = self._timeBetweenReconnects
         while not started:
@@ -362,10 +427,9 @@ class ConnectionHandler:
                 if initialDelay:
                     self.retrying(delay)
                     await asyncio.sleep(initialDelay)
-                _LOGGER.debug(f"trying to start controller")
+                _LOGGER.debug("trying to start controller")
 
                 await self._controller.start()
-
 
                 if self._firstTime:
                     self.started(self._controller)
@@ -382,6 +446,7 @@ class ConnectionHandler:
                 delay = self._next_delay(delay)
 
     def stop(self):
+        """Stop the handler and the associated controller."""
         _LOGGER.debug(f"terminating connection to {self._controller.host}")
         self._stopped = True
         if self._starterTask:
@@ -390,41 +455,46 @@ class ConnectionHandler:
         self._controller.stop()
 
     def _diconnectedCallback(self, controller, err):
-        self.disconnected(controller,err)
+        """Handle the disconnection of the underlying controller."""
+        self.disconnected(controller, err)
         if not self._stopped:
-            _LOGGER.error(f"system disconnected  from {self._controller.host} {err if err else ''}")
-            self._starterTask = asyncio.create_task(self._starter(self._timeBetweenReconnects))
- 
+            _LOGGER.error(
+                f"system disconnected  from {self._controller.host} {err if err else ''}"
+            )
+            self._starterTask = asyncio.create_task(
+                self._starter(self._timeBetweenReconnects)
+            )
+
     def started(self, controller):
-        """
-            invoked only the first time the controller is started
-            further reconnections will trigger reconnected method instead
+        """Handle the first time the controller is started.
+
+        further reconnections will trigger reconnected method instead
         """
         pass
 
     def retrying(self, delay):
-        """ just a friendly way to indicate we will retry connection in {delay} seconds """
+        """Handle the fact that we will retry connection in {delay} seconds."""
         _LOGGER.info(f"will attempt to reconnect in {delay}s")
 
     def updated(self, controller, changes):
-        """
-            invoked when our system has been modified
-            only invoked if the controller has a _updatedCallback attribute
-            changes is expected to contain the list of modified objects
+        """Handle the callback that our underlying system has been modified.
+
+        only invoked if the controller has a _updatedCallback attribute
+        changes is expected to contain the list of modified objects
         """
         pass
 
-    def disconnected(self,controller,exc):
-        """
-            invoked when the controller as been disconnected
-            exc will contain the underlying exception except if
-            the hearbeat has been missed, in this case exc is None
+    def disconnected(self, controller, exc):
+        """Handle the controller being disconnected.
+
+        exc will contain the underlying exception except if
+        the hearbeat has been missed, in this case exc is None
         """
         pass
 
     def reconnected(self, controller):
-        """
-            invoked when the controller as been reconnected
-            only occurs if the controller was connected before
+        """Handle the controller being reconnected.
+
+        only occurs if the controller was connected before
         """
         pass

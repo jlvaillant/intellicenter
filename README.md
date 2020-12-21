@@ -15,7 +15,7 @@
 
 ### Features
 
-- Connect to a Pentair Intellicenter thru the local (network) inferface
+- Connect to a Pentair Intellicenter thru the local (network) interface
 - supports Zeroconf discovery
 - reconnects itself grafecully in the Intellicenter reboots and/or gets disconnected
 - "Local push" makes system very responsive
@@ -30,7 +30,7 @@
         - set to ON to enable that heater, set to OFF otherwise
         - status is 'OFF', 'IDLE' (if heater is enabled but NOT running) or
           'HEATING' is the heater is currently running
-- creates a swicth for all circuits marked as "Featured" on the IntelliCenter
+- creates a switch for all circuits marked as "Featured" on the IntelliCenter
   (for example "Cleaner" or "Spa Blower)
 - for each light (and light show) it creates a Light entity
   Note that color effects are only implemented for IntelliBrite lights

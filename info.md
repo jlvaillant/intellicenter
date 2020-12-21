@@ -4,7 +4,7 @@
 
 ### Features
 
-- Connect to a Pentair Intellicenter thru the local (network) inferface
+- Connect to a Pentair Intellicenter thru the local (network) interface
 - supports Zeroconf discovery
 - reconnects itself grafecully in the Intellicenter reboots and/or gets disconnected
 - "Local push" makes system very responsive

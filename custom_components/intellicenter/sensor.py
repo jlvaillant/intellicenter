@@ -1,25 +1,26 @@
-import logging
-from typing import Any, Callable, Dict, List, Optional
+"""Pentair Intellicenter sensors."""
 
-from homeassistant.helpers.entity import Entity
+import logging
+from typing import Optional
+
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import (
+    DEVICE_CLASS_ENERGY,
+    DEVICE_CLASS_TEMPERATURE,
+    POWER_WATT,
+    TEMP_FAHRENHEIT,
+)
 from homeassistant.helpers.typing import HomeAssistantType
 
-from homeassistant.const import (
-    DEVICE_CLASS_TEMPERATURE,
-    TEMP_FAHRENHEIT,
-    DEVICE_CLASS_ENERGY,
-    POWER_WATT
-)
-
 from . import PoolEntity
-
-from .const import DOMAIN
+from .const import CONST_GPM, CONST_RPM, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_entry(hass, entry: ConfigEntry, async_add_entities):
+async def async_setup_entry(
+    hass: HomeAssistantType, entry: ConfigEntry, async_add_entities
+):
     """Load pool sensors based on a config entry."""
 
     controller = hass.data[DOMAIN][entry.entry_id].controller
@@ -27,44 +28,97 @@ async def async_setup_entry(hass, entry: ConfigEntry, async_add_entities):
     sensors = []
 
     for object in controller.model.objectList:
-        if object.objtype == 'SENSE':
-            sensors.append(PoolSensor(entry, controller, object,
-                                      device_class=DEVICE_CLASS_TEMPERATURE,
-                                      unit_of_measurement=TEMP_FAHRENHEIT,
-                                      attribute_key='PROBE'))
-        elif object.objtype == 'PUMP':
-            if object['PWR']:
-                sensors.append(PoolSensor(entry, controller, object,
-                                          device_class=DEVICE_CLASS_ENERGY,
-                                          unit_of_measurement=POWER_WATT,
-                                          attribute_key='PWR',
-                                          name_suffix='power',
-                                          rounding_factor=25))
-        elif object.objtype == 'BODY':
-            sensors.append(PoolSensor(entry, controller, object,
-                                      device_class=DEVICE_CLASS_TEMPERATURE,
-                                      unit_of_measurement=TEMP_FAHRENHEIT,
-                                      attribute_key='LSTTMP',
-                                      name_suffix='last temp'))
-            sensors.append(PoolSensor(entry, controller, object,
-                                      device_class=DEVICE_CLASS_TEMPERATURE,
-                                      unit_of_measurement=TEMP_FAHRENHEIT,
-                                      attribute_key='LOTMP',
-                                      name_suffix='desired temp'))
+        if object.objtype == "SENSE":
+            sensors.append(
+                PoolSensor(
+                    entry,
+                    controller,
+                    object,
+                    device_class=DEVICE_CLASS_TEMPERATURE,
+                    unit_of_measurement=TEMP_FAHRENHEIT,
+                    attribute_key="PROBE",
+                )
+            )
+        elif object.objtype == "PUMP":
+            if object["PWR"]:
+                sensors.append(
+                    PoolSensor(
+                        entry,
+                        controller,
+                        object,
+                        device_class=DEVICE_CLASS_ENERGY,
+                        unit_of_measurement=POWER_WATT,
+                        attribute_key="PWR",
+                        name_suffix="power",
+                        rounding_factor=25,
+                    )
+                )
+            if object["RPM"]:
+                sensors.append(
+                    PoolSensor(
+                        entry,
+                        controller,
+                        object,
+                        device_class=None,
+                        unit_of_measurement=CONST_RPM,
+                        attribute_key="RPM",
+                        name_suffix="rpm",
+                    )
+                )
+            if object["GPM"]:
+                sensors.append(
+                    PoolSensor(
+                        entry,
+                        controller,
+                        object,
+                        device_class=None,
+                        unit_of_measurement=CONST_GPM,
+                        attribute_key="GPM",
+                        name_suffix="gpm",
+                    )
+                )
+        elif object.objtype == "BODY":
+            sensors.append(
+                PoolSensor(
+                    entry,
+                    controller,
+                    object,
+                    device_class=DEVICE_CLASS_TEMPERATURE,
+                    unit_of_measurement=TEMP_FAHRENHEIT,
+                    attribute_key="LSTTMP",
+                    name_suffix="last temp",
+                )
+            )
+            sensors.append(
+                PoolSensor(
+                    entry,
+                    controller,
+                    object,
+                    device_class=DEVICE_CLASS_TEMPERATURE,
+                    unit_of_measurement=TEMP_FAHRENHEIT,
+                    attribute_key="LOTMP",
+                    name_suffix="desired temp",
+                )
+            )
     async_add_entities(sensors)
 
 
 class PoolSensor(PoolEntity):
     """Representation of an Pentair sensor."""
 
-    def __init__(self, entry: ConfigEntry, controller, poolObject,
-                 device_class: str,
-                 unit_of_measurement: str,
-                 attribute_key: str,
-                 name_suffix='',
-                 rounding_factor: int = 0,
-                 **kwargs
-                 ):
+    def __init__(
+        self,
+        entry: ConfigEntry,
+        controller,
+        poolObject,
+        device_class: str,
+        unit_of_measurement: str,
+        attribute_key: str,
+        name_suffix="",
+        rounding_factor: int = 0,
+        **kwargs
+    ):
+        """Initialize."""
         super().__init__(entry, controller, poolObject, **kwargs)
         self._attribute_key = attribute_key
         self._name_suffix = name_suffix
@@ -77,7 +131,7 @@ class PoolSensor(PoolEntity):
         """Return the name of the entity."""
         name = super().name
         if self._name_suffix:
-            name += ' ' + self._name_suffix
+            name += " " + self._name_suffix
         return name
 
     @property
@@ -92,7 +146,7 @@ class PoolSensor(PoolEntity):
 
     @property
     def state(self):
-        """ Return the state of the sensor. """
+        """Return the state of the sensor."""
 
         value = int(self._poolObject[self._attribute_key])
 
@@ -101,7 +155,7 @@ class PoolSensor(PoolEntity):
         # smoothes the curve and limits the number of updates in the log
 
         if self._rounding_factor:
-            value = int(round(value/self._rounding_factor)*self._rounding_factor)
+            value = int(round(value / self._rounding_factor) * self._rounding_factor)
 
         return value
 

@@ -2,11 +2,13 @@
     "domain": "intellicenter",
     "name": "Pentair IntelliCenter",
     "documentation": "https://github.com/jlvaillant/intellicenter",
+    "issue_tracker": "https://github.com/jlvaillant/intellicenter/issues",
     "codeowners": ["@jlvaillant"],
     "requirements": [],
     "dependencies": [],
     "config_flow": true,
     "zeroconf": [
         { "type":"_http._tcp.local.", "name":"Pentair*"}
-      ]
+      ],
+    "quality_scale": "gold"
   }

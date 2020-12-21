@@ -1,15 +1,16 @@
+"""Config flow for Pentair Intellicenter integration."""
+
 import logging
 from typing import Any, Dict, Optional
-from .pyintellicenter import BaseController,SystemInfo
-import asyncio
+
+from homeassistant.config_entries import ConfigFlow
+from homeassistant.const import CONF_HOST, CONF_NAME
+from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.typing import ConfigType
 import voluptuous as vol
 
 from .const import DOMAIN
-from homeassistant.exceptions import HomeAssistantError
-from homeassistant.config_entries import ConfigFlow
-from homeassistant.core import callback
-from homeassistant.const import (CONF_HOST, CONF_NAME)
-from homeassistant.helpers.typing import ConfigType, HomeAssistantType
+from .pyintellicenter import BaseController, SystemInfo
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -27,28 +28,27 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
         """Initialize a new Intellicenter ConfigFlow."""
         pass
 
-    async def async_step_user( self, user_input: Optional[ConfigType] = None ) -> Dict[str, Any]:
+    async def async_step_user(
+        self, user_input: Optional[ConfigType] = None
+    ) -> Dict[str, Any]:
         """Handle a flow initiated by the user."""
         if user_input is None:
             return self._show_setup_form()
 
         try:
             system_info = await self._get_system_info(user_input[CONF_HOST])
- 
+
             # Check if already configured
             await self.async_set_unique_id(system_info.uniqueID)
             self._abort_if_unique_id_configured()
 
             return self.async_create_entry(
-                title=system_info.propName,
-                data={ CONF_HOST: user_input[CONF_HOST] },
+                title=system_info.propName, data={CONF_HOST: user_input[CONF_HOST]}
             )
         except CannotConnect:
             return self._show_setup_form({"base": "cannot_connect"})
         except Exception:  # pylint: disable=broad-except
             return self._show_setup_form({"base": "cannot_connect"})
- 
-
 
     async def async_step_zeroconf(self, discovery_info: ConfigType) -> Dict[str, Any]:
         """Handle device found via zeroconf."""
@@ -66,7 +66,7 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
             await self.async_set_unique_id(system_info.uniqueID)
 
             # if there is already a flow for this system, update the host ip address for it
-            self._abort_if_unique_id_configured(updates = {CONF_HOST: host})
+            self._abort_if_unique_id_configured(updates={CONF_HOST: host})
 
             self.context.update(
                 {
@@ -83,7 +83,9 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
         except Exception:  # pylint: disable=broad-except
             return self.async_abort(reason="unknown")
 
-    async def async_step_zeroconf_confirm(self, user_input: ConfigType = None) -> Dict[str, Any]:
+    async def async_step_zeroconf_confirm(
+        self, user_input: ConfigType = None
+    ) -> Dict[str, Any]:
         """Handle a flow initiated by zeroconf."""
         if user_input is None:
             return self._show_confirm_dialog()
@@ -100,25 +102,18 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
         except Exception:  # pylint: disable=broad-except
             return self.async_abort(reason="unknown")
 
-
         return self.async_create_entry(
-                title=system_info.propName,
-                data={ CONF_HOST: self.context.get(CONF_HOST) },
-            )
-
+            title=system_info.propName, data={CONF_HOST: self.context.get(CONF_HOST)}
+        )
 
     def _show_setup_form(self, errors: Optional[Dict] = None) -> Dict[str, Any]:
         """Show the setup form to the user."""
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_HOST): str,
-                }
-            ),
+            data_schema=vol.Schema({vol.Required(CONF_HOST): str}),
             errors=errors or {},
         )
-    
+
     def _show_confirm_dialog(self) -> Dict[str, Any]:
         """Show the confirm dialog to the user."""
 
@@ -130,11 +125,10 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
             description_placeholders={"host": host, "name": name},
         )
 
+    async def _get_system_info(self, host: str) -> SystemInfo:
+        """Attempt to connect to the host and retrieve basic system information."""
 
-    async def _get_system_info(self, host: str):
-        """ Attempt to connect to the host and retrieve basic system information """
-
-        controller = BaseController(host, loop = self.hass.loop)
+        controller = BaseController(host, loop=self.hass.loop)
 
         try:
             await controller.start()
