@@ -10,7 +10,7 @@ repos:
       - id: black
         args:
           - --safe
-          - --quiet
+        #   - --quiet
   - repo: https://github.com/codespell-project/codespell
     rev: v1.17.1
     hooks:

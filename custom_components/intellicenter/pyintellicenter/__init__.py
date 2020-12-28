@@ -7,7 +7,7 @@ from .controller import (
     ModelController,
     SystemInfo,
 )
-from .model import ALL_KNOWN_ATTRIBUTES, PoolModel, PoolObject
+from .model import PoolModel, PoolObject
 
 __all__ = [
     BaseController,
@@ -15,7 +15,6 @@ __all__ = [
     ConnectionHandler,
     ModelController,
     SystemInfo,
-    ALL_KNOWN_ATTRIBUTES,
     PoolModel,
     PoolObject,
 ]

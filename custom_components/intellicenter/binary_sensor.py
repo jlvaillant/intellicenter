@@ -8,6 +8,7 @@ from homeassistant.helpers.typing import HomeAssistantType
 
 from . import PoolEntity
 from .const import DOMAIN
+from .pyintellicenter import ModelController, PoolObject
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -17,10 +18,11 @@ async def async_setup_entry(
 ):
     """Load pool sensors based on a config entry."""
 
-    controller = hass.data[DOMAIN][entry.entry_id].controller
+    controller: ModelController = hass.data[DOMAIN][entry.entry_id].controller
 
     sensors = []
 
+    object: PoolObject
     for object in controller.model.objectList:
         if (
             object.objtype == "CIRCUIT" and object.subtype == "FRZ"

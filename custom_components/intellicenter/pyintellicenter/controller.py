@@ -4,9 +4,10 @@ import asyncio
 from asyncio import Future
 from hashlib import blake2b
 import logging
-from typing import Optional
+import traceback
+from typing import Dict, Optional
 
-from .model import ALL_KNOWN_ATTRIBUTES
+from .model import PoolModel
 from .protocol import ICProtocol
 
 _LOGGER = logging.getLogger(__name__)
@@ -32,11 +33,12 @@ class CommandError(Exception):
 class SystemInfo:
     """Represents minimal information about a Pentair system."""
 
-    def __init__(self, params: dict):
+    def __init__(self, objnam: str, params: dict):
         """Initialize from a dictionary."""
+        self._objnam = objnam
         self._propName = params["PROPNAME"]
         self._sw_version = params["VER"]
-
+        self._mode = params["MODE"]
         # here we compute what is expected to be a unique_id
         # from the internal name of the system object
         h = blake2b(digest_size=8)
@@ -54,9 +56,21 @@ class SystemInfo:
         return self._sw_version
 
     @property
+    def usesMetric(self):
+        """Return True is the system uses metric for temperature units."""
+        return self._mode == "METRIC"
+
+    @property
     def uniqueID(self):
         """Return a unique id for that system."""
         return self._unique_id
+
+    def update(self, updates):
+        """Update the object from a set of key/value pairs."""
+        _LOGGER.debug(f"updating system info with {updates}")
+        self._propName = updates.get("PROPNAME", self._propName)
+        self._sw_version = updates.get("VER", self._sw_version)
+        self._mode = updates.get("MODE", self._mode)
 
 
 # -------------------------------------------------------------------------------------
@@ -94,7 +108,7 @@ class BaseController:
         self._requests = {}
 
     @property
-    def host(self):
+    def host(self) -> str:
         """Return the host the controller is connected to."""
         return self._host
 
@@ -121,12 +135,13 @@ class BaseController:
             {
                 "condition": "OBJTYP=SYSTEM",
                 "objectList": [
-                    {"objnam": "INCR", "keys": ["SNAME", "VER", "PROPNAME"]}
+                    {"objnam": "INCR", "keys": ["SNAME", "VER", "PROPNAME", "MODE"]}
                 ],
             },
         )
 
-        self._systemInfo = SystemInfo(msg["objectList"][0]["params"])
+        info = msg["objectList"][0]
+        self._systemInfo = SystemInfo(info["objnam"], info["params"])
 
     def stop(self):
         """Stop all activities from this controller and disconnect."""
@@ -167,7 +182,7 @@ class BaseController:
             waitForResponse=waitForResponse,
         )
 
-    async def getAllObjects(self, attributeList: list = ALL_KNOWN_ATTRIBUTES):
+    async def getAllObjects(self, attributeList: list):
         """Return the values of given attributes for all objects in the system."""
 
         result = await self.sendCmd(
@@ -261,14 +276,12 @@ class ModelController(BaseController):
     def __init__(self, host, model, port=6681, loop=None):
         """Initialize the controller."""
         super().__init__(host, port, loop)
-        self._model = model
-
-        self._systemInitialized = False
+        self._model: PoolModel = model
 
         self._updatedCallback = None
 
     @property
-    def model(self):
+    def model(self) -> PoolModel:
         """Return the model this controller manages."""
         return self._model
 
@@ -276,13 +289,12 @@ class ModelController(BaseController):
         """Start the controller, fetch and start monitoring the model."""
         await super().start()
 
-        # with the connection now established we first retrieve all the objects
-        allObjects = await self.getAllObjects()
-
-        _LOGGER.debug(f"objects received: {allObjects}")
-
+        # now we retrieve all the objects type, subtype, sname and parent
+        allObjects = await self.getAllObjects(["OBJTYP", "SUBTYP", "SNAME", "PARENT"])
         # and process that list into our model
-        self.receivedSystemConfig(allObjects)
+        self.model.addObjects(allObjects)
+
+        # _LOGGER.debug(f"objects received: {allObjects}")
 
         _LOGGER.info(f"model now contains {self.model.numObjects} objects")
 
@@ -290,24 +302,27 @@ class ModelController(BaseController):
             # now that I have my object loaded in the model
             # build a query to monitors all their relevant attributes
 
-            query = []
-            for object in self.model:
-                attributes = object.attributes
-                if attributes:
-                    query.append({"objnam": object.objnam, "keys": attributes})
-                # a query too large can choke the protocol...
-                # we split them in maximum of 30 objects (arbitrary but seems to work)
-                if len(query) >= 30:
-                    msg = await self.sendCmd("RequestParamList", {"objectList": query})
-                    self.receivedNotifyList(msg["objectList"])
-                    query = []
+            attributes = self._model.attributesToTrack()
 
+            query = []
+            numAttributes = 0
+            for items in attributes:
+                query.append(items)
+                numAttributes += len(items["keys"])
+                # a query too large can choke the protocol...
+                # we split them in maximum of 250 attributes (arbitrary but seems to work)
+                if numAttributes >= 250:
+                    res = await self.sendCmd("RequestParamList", {"objectList": query})
+                    self._applyUpdates(res["objectList"])
+                    query = []
+                    numAttributes = 0
             # and issue the remaining elements if any
             if query:
-                msg = await self.sendCmd("RequestParamList", {"objectList": query})
-                self.receivedNotifyList(msg["objectList"])
+                res = await self.sendCmd("RequestParamList", {"objectList": query})
+                self._applyUpdates(res["objectList"])
 
         except Exception as err:
+            traceback.print_exc()
             raise err
 
     def receivedQueryResult(self, queryName: str, answer):
@@ -319,20 +334,28 @@ class ModelController(BaseController):
 
         pass
 
+    def _applyUpdates(self, changesAsList):
+        """Apply updates received to the model."""
+
+        updates = self._model.processUpdates(changesAsList)
+
+        # if an update happens on the SYSTEM object
+        # also applies it to our cached SystemInfo
+        systemObjnam = self._systemInfo._objnam
+        if systemObjnam in updates:
+            self._systemInfo.update(updates[systemObjnam])
+
+        if updates and self._updatedCallback:
+            self._updatedCallback(self, updates)
+
+        return updates
+
     def receivedNotifyList(self, changes):
         """Handle the notifications from IntelliCenter when tracked objects are modified."""
 
         try:
             # apply the changes back to the model
-
-            updatedList = self._model.processUpdates(changes)
-
-            _LOGGER.debug(
-                f"CONTROLLER: received NotifyList: {len(updatedList)} objects updated"
-            )
-
-            if self._updatedCallback:
-                self._updatedCallback(self, updatedList)
+            self._applyUpdates(changes)
 
         except Exception as err:
             _LOGGER.error(f"CONTROLLER: receivedNotifyList {err}")
@@ -340,24 +363,21 @@ class ModelController(BaseController):
     def receivedWriteParamList(self, changes):
         """Handle the response to a change requested on an object."""
 
-        # similar to the receivedNotifyList except
         try:
-            # print(f"receivedWriteParamList {len(changes)} for {self._model.numObjects} objects")
-            updatedList = self._model.processUpdates(changes)
-            if self._updatedCallback:
-                self._updatedCallback(self, updatedList)
+            self._applyUpdates(changes)
+
         except Exception as err:
             _LOGGER.error(f"CONTROLLER: receivedWriteParamList {err}")
 
     def receivedSystemConfig(self, objectList):
-        """Handle the response for the initial request for all objects."""
+        """Handle the response for a request for objects."""
 
         _LOGGER.debug(
             f"CONTROLLER: received SystemConfig for {len(objectList)} object(s)"
         )
 
-        for object in prune(objectList):
-            self.model.addObject(object["objnam"], object["params"])
+        # note that here we might create new objects
+        self.model.addObjects(objectList)
 
     def processMessage(self, command: str, msg):
         """Handle the callback for an incoming message."""
@@ -374,7 +394,7 @@ class ModelController(BaseController):
             elif command == "SendParamList":
                 self.receivedSystemConfig(msg["objectList"])
             else:
-                print(f"ignoring {command}")
+                _LOGGER.debug(f"no handler for {command}")
         except Exception as err:
             _LOGGER.error(f"error {err} while processing {msg}")
             # traceback.print_exc()
@@ -476,7 +496,7 @@ class ConnectionHandler:
         """Handle the fact that we will retry connection in {delay} seconds."""
         _LOGGER.info(f"will attempt to reconnect in {delay}s")
 
-    def updated(self, controller, changes):
+    def updated(self, controller: ModelController, updates: Dict):
         """Handle the callback that our underlying system has been modified.
 
         only invoked if the controller has a _updatedCallback attribute

@@ -1,10 +1,12 @@
 """Pentair Intellicenter lights."""
 
+from functools import reduce
 import logging
-from typing import Any
+from typing import Any, Dict
 
 from homeassistant.components.light import ATTR_EFFECT, SUPPORT_EFFECT, LightEntity
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import callback
 from homeassistant.helpers.typing import HomeAssistantType
 
 from . import PoolEntity
@@ -13,44 +15,72 @@ from .pyintellicenter import ModelController, PoolObject
 
 _LOGGER = logging.getLogger(__name__)
 
+LIGHTS_EFFECTS = {
+    "PARTY": "Party Mode",
+    "CARIB": "Caribbean",
+    "SSET": "Sunset",
+    "ROMAN": "Romance",
+    "AMERCA": "American",
+    "ROYAL": "Royal",
+    "WHITER": "White",
+    "REDR": "Red",
+    "BLUER": "Blue",
+    "GREENR": "Green",
+    "MAGNTAR": "Magenta",
+}
+
 
 async def async_setup_entry(
     hass: HomeAssistantType, entry: ConfigEntry, async_add_entities
 ):
     """Load pool lights based on a config entry."""
 
-    controller = hass.data[DOMAIN][entry.entry_id].controller
+    controller: ModelController = hass.data[DOMAIN][entry.entry_id].controller
 
     lights = []
 
+    object: PoolObject
     for object in controller.model.objectList:
         if object.isALight:
-            lights.append(PoolLight(entry, controller, object))
+            lights.append(
+                PoolLight(
+                    entry,
+                    controller,
+                    object,
+                    LIGHTS_EFFECTS if object.supportColorEffects else None,
+                )
+            )
+        elif object.isALightShow:
+
+            supportColorEffects = reduce(
+                lambda x, y: x and y,
+                map(
+                    lambda obj: controller.model[obj["CIRCUIT"]].supportColorEffects,
+                    controller.model.getChildren(object),
+                ),
+                True,
+            )
+            lights.append(
+                PoolLight(
+                    entry,
+                    controller,
+                    object,
+                    LIGHTS_EFFECTS if supportColorEffects else None,
+                )
+            )
+
     async_add_entities(lights)
-
-
-LIGHTS_EFFECTS_BY_TYPE = {
-    "INTELLI": {
-        "PARTY": "Party Mode",
-        "CARIB": "Caribbean",
-        "SSET": "Sunset",
-        "ROMAN": "Romance",
-        "AMERCA": "American",
-        "ROYAL": "Royal",
-        "WHITER": "White",
-        "REDR": "Red",
-        "BLUER": "Blue",
-        "GREENR": "Green",
-        "MAGNTAR": "Magenta",
-    }
-}
 
 
 class PoolLight(PoolEntity, LightEntity):
     """Representation of an Pentair light."""
 
     def __init__(
-        self, entry: ConfigEntry, controller: ModelController, poolObject: PoolObject
+        self,
+        entry: ConfigEntry,
+        controller: ModelController,
+        poolObject: PoolObject,
+        colorEffects: dict = None,
     ):
         """Initialize."""
         super().__init__(entry, controller, poolObject)
@@ -59,8 +89,10 @@ class PoolLight(PoolEntity, LightEntity):
 
         self._features = 0
 
-        self._lightEffects = LIGHTS_EFFECTS_BY_TYPE.get(poolObject.subtype, {})
-        self._reversedLightEffects = dict(map(reversed, self._lightEffects.items()))
+        self._lightEffects = colorEffects
+        self._reversedLightEffects = (
+            dict(map(reversed, colorEffects.items())) if colorEffects else None
+        )
 
         if self._lightEffects:
             self._features |= SUPPORT_EFFECT
@@ -101,3 +133,12 @@ class PoolLight(PoolEntity, LightEntity):
                 changes["ACT"] = new_use
 
         self.requestChanges(changes)
+
+    @callback
+    def _update_callback(self, updates: Dict[str, PoolObject]):
+        """Update the entity if its underlying pool object has changed."""
+
+        if self._poolObject.objnam in updates:
+            self._available = True
+            _LOGGER.debug(f"updating {self} from {self._poolObject}")
+            self.async_write_ha_state()

@@ -8,12 +8,12 @@ from homeassistant.const import (
     DEVICE_CLASS_ENERGY,
     DEVICE_CLASS_TEMPERATURE,
     POWER_WATT,
-    TEMP_FAHRENHEIT,
 )
 from homeassistant.helpers.typing import HomeAssistantType
 
 from . import PoolEntity
 from .const import CONST_GPM, CONST_RPM, DOMAIN
+from .pyintellicenter import ModelController, PoolObject
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -23,10 +23,11 @@ async def async_setup_entry(
 ):
     """Load pool sensors based on a config entry."""
 
-    controller = hass.data[DOMAIN][entry.entry_id].controller
+    controller: ModelController = hass.data[DOMAIN][entry.entry_id].controller
 
     sensors = []
 
+    object: PoolObject
     for object in controller.model.objectList:
         if object.objtype == "SENSE":
             sensors.append(
@@ -35,8 +36,7 @@ async def async_setup_entry(
                     controller,
                     object,
                     device_class=DEVICE_CLASS_TEMPERATURE,
-                    unit_of_measurement=TEMP_FAHRENHEIT,
-                    attribute_key="PROBE",
+                    attribute_key="SOURCE",
                 )
             )
         elif object.objtype == "PUMP":
@@ -84,7 +84,6 @@ async def async_setup_entry(
                     controller,
                     object,
                     device_class=DEVICE_CLASS_TEMPERATURE,
-                    unit_of_measurement=TEMP_FAHRENHEIT,
                     attribute_key="LSTTMP",
                     name_suffix="last temp",
                 )
@@ -95,7 +94,6 @@ async def async_setup_entry(
                     controller,
                     object,
                     device_class=DEVICE_CLASS_TEMPERATURE,
-                    unit_of_measurement=TEMP_FAHRENHEIT,
                     attribute_key="LOTMP",
                     name_suffix="desired temp",
                 )
@@ -109,35 +107,18 @@ class PoolSensor(PoolEntity):
     def __init__(
         self,
         entry: ConfigEntry,
-        controller,
-        poolObject,
+        controller: ModelController,
+        poolObject: PoolObject,
         device_class: str,
-        unit_of_measurement: str,
-        attribute_key: str,
-        name_suffix="",
+        unit_of_measurement: str = None,
         rounding_factor: int = 0,
-        **kwargs
+        **kwargs,
     ):
         """Initialize."""
         super().__init__(entry, controller, poolObject, **kwargs)
-        self._attribute_key = attribute_key
-        self._name_suffix = name_suffix
         self._device_class = device_class
         self._unit_of_measurement = unit_of_measurement
         self._rounding_factor = rounding_factor
-
-    @property
-    def name(self):
-        """Return the name of the entity."""
-        name = super().name
-        if self._name_suffix:
-            name += " " + self._name_suffix
-        return name
-
-    @property
-    def unique_id(self):
-        """Return a unique ID."""
-        return super().unique_id + self._attribute_key
 
     @property
     def device_class(self) -> Optional[str]:
@@ -162,4 +143,6 @@ class PoolSensor(PoolEntity):
     @property
     def unit_of_measurement(self) -> Optional[str]:
         """Return the unit of measurement of this entity, if any."""
+        if self._device_class == DEVICE_CLASS_TEMPERATURE:
+            return self.pentairTemperatureSettings()
         return self._unit_of_measurement

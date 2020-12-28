@@ -9,7 +9,12 @@ from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
 from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
 from homeassistant.components.water_heater import DOMAIN as WATER_HEATER_DOMAIN
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_HOST, EVENT_HOMEASSISTANT_STOP
+from homeassistant.const import (
+    CONF_HOST,
+    EVENT_HOMEASSISTANT_STOP,
+    TEMP_CELSIUS,
+    TEMP_FAHRENHEIT,
+)
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import dispatcher
@@ -17,7 +22,7 @@ from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.typing import ConfigType
 
 from .const import DOMAIN
-from .pyintellicenter import ConnectionHandler, ModelController, PoolModel
+from .pyintellicenter import ConnectionHandler, ModelController, PoolModel, PoolObject
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,24 +44,37 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up IntelliCenter integration from a config entry."""
 
-    # we are only interested in a subset of all objects
-    def filterFunc(object):
-        """Return true for the objects we care about."""
-        return object.status and object.objtype in [
-            "BODY",
-            "SENSE",
-            "PUMP",
-            "HEATER",
-            "CIRCUIT",
-        ]
+    # we don't need some of the system objects
+    def ignoreFunc(object):
+        """Return False for the objects we want to ignore."""
 
-    model = PoolModel(filterFunc)
+        return (
+            object.objtype
+            in [
+                "PANEL",
+                "MODULE",
+                "PERMIT",
+                "SYSTIM",
+            ]
+            or object.subtype in ["LEGACY"]
+        )
+
+    attributes_map = {
+        "BODY": {"SNAME", "HEATER", "HTMODE", "LOTMP", "LSTTMP", "STATUS"},
+        "CIRCUIT": {"SNAME", "STATUS", "USE", "SUBTYPE", "FEATR"},
+        "CIRCGRP": {"CIRCUIT"},
+        "HEATER": {"SNAME", "BODY"},
+        "PUMP": {"SNAME", "STATUS", "PWR", "RPM", "GPM"},
+        "SENSE": {"SNAME", "SOURCE"},
+    }
+    model = PoolModel(attributes_map)
 
     controller = ModelController(entry.data[CONF_HOST], model, loop=hass.loop)
 
     class Handler(ConnectionHandler):
 
         UPDATE_SIGNAL = DOMAIN + "_UPDATE_" + entry.entry_id
+        CONNECTION_SIGNAL = DOMAIN + "_CONNECTION_" + entry.entry_id
 
         def started(self, controller):
 
@@ -74,15 +92,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     ]
                 )
 
+                # dispatcher.async_dispatcher_send(hass, self.CONNECTION_SIGNAL, True)
+
             hass.async_create_task(setup_platforms())
 
         @callback
         def reconnected(self, controller):
             """Handle reconnection from the Pentair system."""
             _LOGGER.info(f"reconnected to system: '{controller.systemInfo.propName}'")
-            dispatcher.async_dispatcher_send(
-                hass, self.UPDATE_SIGNAL, controller.model.objectList
-            )
+            dispatcher.async_dispatcher_send(hass, self.CONNECTION_SIGNAL, True)
 
         @callback
         def disconnected(self, controller, exc):
@@ -90,16 +108,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             _LOGGER.info(
                 f"disconnected from system: '{controller.systemInfo.propName}'"
             )
-            dispatcher.async_dispatcher_send(
-                hass, DOMAIN + "_DISCONNECT_" + entry.entry_id
-            )
+            dispatcher.async_dispatcher_send(hass, self.CONNECTION_SIGNAL, False)
 
         @callback
-        def updated(self, controller, changes):
+        def updated(self, controller, updates: Dict[str, PoolObject]):
             """Handle updates from the Pentair system."""
-            for object in changes:
-                _LOGGER.debug(f"received update for {object}")
-            dispatcher.async_dispatcher_send(hass, self.UPDATE_SIGNAL, changes)
+            _LOGGER.debug(f"received update for {len(updates)} pool objects")
+            dispatcher.async_dispatcher_send(hass, self.UPDATE_SIGNAL, updates)
 
     try:
 
@@ -155,13 +170,22 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 class PoolEntity(Entity):
     """Representation of an Pool entity linked to an pool object."""
 
-    def __init__(self, entry: ConfigEntry, controller, poolObject):
+    def __init__(
+        self,
+        entry: ConfigEntry,
+        controller: ModelController,
+        poolObject: PoolObject,
+        attribute_key="STATUS",
+        name_suffix="",
+    ):
         """Initialize a Pool entity."""
         self._entry_id = entry.entry_id
         self._controller = controller
         self._poolObject = poolObject
         self._available = True
         self._extraStateAttributes = []
+        self._name_suffix = name_suffix
+        self._attribute_key = attribute_key
 
         _LOGGER.debug(f"mapping {poolObject}")
 
@@ -176,8 +200,8 @@ class PoolEntity(Entity):
         self.async_on_remove(
             dispatcher.async_dispatcher_connect(
                 self.hass,
-                DOMAIN + "_DISCONNECT_" + self._entry_id,
-                self._disconnect_callback,
+                DOMAIN + "_CONNECTION_" + self._entry_id,
+                self._connection_callback,
             )
         )
 
@@ -193,12 +217,18 @@ class PoolEntity(Entity):
     @property
     def name(self):
         """Return the name of the entity."""
-        return self._poolObject.sname
+        name = self._poolObject.sname
+        if self._name_suffix:
+            name += " " + self._name_suffix
+        return name
 
     @property
     def unique_id(self):
         """Return a unique ID."""
-        return self._entry_id + self._poolObject.objnam
+        my_id = self._entry_id + self._poolObject.objnam
+        if self._attribute_key != "STATUS":
+            my_id += self._attribute_key
+        return my_id
 
     @property
     def should_poll(self):
@@ -250,15 +280,29 @@ class PoolEntity(Entity):
         )
 
     @callback
-    def _update_callback(self, changes):
+    def _update_callback(self, updates: Dict[str, Dict[str, str]]):
         """Update the entity if its underlying pool object has changed."""
-        for object in changes:
-            if object.objnam == self._poolObject.objnam:
-                self._available = True
-                self.async_write_ha_state()
+
+        if self._attribute_key in updates.get(self._poolObject.objnam, {}):
+            self._available = True
+            my_updates = updates.get(self._poolObject.objnam)
+            _LOGGER.debug(f"updating {self} from {my_updates}")
+            self.async_write_ha_state()
 
     @callback
-    def _disconnect_callback(self):
+    def _connection_callback(self, is_connected):
         """Mark the entity as unavailable after being disconnected from the server."""
-        self._available = False
+        if is_connected:
+            self._poolObject = self._controller.model[self._poolObject.objnam]
+            if not self._poolObject:
+                # this is for the rare case where the object the entity is mapped to
+                # had been removed from the Pentair system while we were disconnected
+                return
+        self._available = is_connected
         self.async_write_ha_state()
+
+    def pentairTemperatureSettings(self):
+        """Return the temperature units from the Pentair system."""
+        return (
+            TEMP_CELSIUS if self._controller.systemInfo.usesMetric else TEMP_FAHRENHEIT
+        )

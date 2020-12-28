@@ -1,6 +1,7 @@
 """Pentair Intellicenter water heaters."""
 
 import logging
+from typing import Dict
 
 from homeassistant.components.water_heater import (
     SUPPORT_OPERATION_MODE,
@@ -8,13 +9,8 @@ from homeassistant.components.water_heater import (
     WaterHeaterEntity,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import (
-    ATTR_TEMPERATURE,
-    STATE_IDLE,
-    STATE_OFF,
-    STATE_ON,
-    TEMP_FAHRENHEIT,
-)
+from homeassistant.const import ATTR_TEMPERATURE, STATE_IDLE, STATE_OFF, STATE_ON
+from homeassistant.core import callback
 from homeassistant.helpers.typing import HomeAssistantType
 
 from . import PoolEntity
@@ -92,18 +88,17 @@ class PoolWaterHeater(PoolEntity, WaterHeaterEntity):
     @property
     def temperature_unit(self):
         """Return the unit of measurement used by the platform."""
-        return TEMP_FAHRENHEIT
+        return self.pentairTemperatureSettings()
 
     @property
     def min_temp(self):
         """Return the minimum value."""
-        # this is totally arbitrary...
-        return 40.0
+        return 5.0 if self._controller.systemInfo.usesMetric else 4.0
 
     @property
     def max_temp(self):
         """Return the maximum temperature."""
-        return float(self._poolObject["HITMP"])
+        return 40.0 if self._controller.systemInfo.usesMetric else 104.0
 
     @property
     def current_temperature(self):
@@ -138,3 +133,12 @@ class PoolWaterHeater(PoolEntity, WaterHeaterEntity):
         """Set new target operation mode."""
         value = self._heater_id if operation_mode == STATE_ON else "00000"
         self.requestChanges({"HEATER": value})
+
+    @callback
+    def _update_callback(self, updates: Dict[str, PoolObject]):
+        """Update the entity if its underlying pool object has changed."""
+
+        if self._poolObject.objnam in updates:
+            self._available = True
+            _LOGGER.debug(f"updating {self} from {self._poolObject}")
+            self.async_write_ha_state()

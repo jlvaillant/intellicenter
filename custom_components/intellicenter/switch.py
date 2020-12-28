@@ -9,6 +9,7 @@ from homeassistant.helpers.typing import HomeAssistantType
 
 from . import PoolEntity
 from .const import DOMAIN
+from .pyintellicenter import ModelController, PoolObject
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -17,34 +18,39 @@ async def async_setup_entry(
     hass: HomeAssistantType, entry: ConfigEntry, async_add_entities
 ):
     """Load a Pentair switch based on a config entry."""
-    controller = hass.data[DOMAIN][entry.entry_id].controller
+    controller: ModelController = hass.data[DOMAIN][entry.entry_id].controller
 
     switches = []
 
+    object: PoolObject
     for object in controller.model.objectList:
         if object.objtype == "BODY":
             switches.append(PoolBody(entry, controller, object))
-        elif object.objtype == "CIRCUIT" and not object.isALight and object.isFeatured:
+        elif (
+            object.objtype == "CIRCUIT"
+            and not (object.isALight or object.isALightShow)
+            and object.isFeatured
+        ):
             switches.append(PoolCircuit(entry, controller, object))
 
     async_add_entities(switches)
 
 
 class PoolCircuit(PoolEntity, SwitchEntity):
-    """Representation of an pool circuit."""
+    """Representation of an standard pool circuit."""
 
     @property
     def is_on(self) -> bool:
         """Return the state of the circuit."""
-        return self._poolObject.status == self._poolObject.onStatus
+        return self._poolObject[self._attribute_key] == self._poolObject.onStatus
 
     def turn_off(self, **kwargs: Any) -> None:
         """Turn off the switch."""
-        self.requestChanges({"STATUS": self._poolObject.offStatus})
+        self.requestChanges({self._attribute_key: self._poolObject.offStatus})
 
     def turn_on(self, **kwargs: Any) -> None:
         """Turn off the switch."""
-        self.requestChanges({"STATUS": self._poolObject.onStatus})
+        self.requestChanges({self._attribute_key: self._poolObject.onStatus})
 
 
 class PoolBody(PoolCircuit):
