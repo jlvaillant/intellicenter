@@ -7,6 +7,16 @@ import logging
 import traceback
 from typing import Dict, Optional
 
+from .attributes import (
+    MODE_ATTR,
+    OBJTYP_ATTR,
+    PARENT_ATTR,
+    PROPNAME_ATTR,
+    SNAME_ATTR,
+    SUBTYP_ATTR,
+    SYSTEM_TYPE,
+    VER_ATTR,
+)
 from .model import PoolModel
 from .protocol import ICProtocol
 
@@ -33,16 +43,18 @@ class CommandError(Exception):
 class SystemInfo:
     """Represents minimal information about a Pentair system."""
 
+    ATTRIBUTES_LIST = [PROPNAME_ATTR, VER_ATTR, MODE_ATTR, SNAME_ATTR]
+
     def __init__(self, objnam: str, params: dict):
         """Initialize from a dictionary."""
         self._objnam = objnam
-        self._propName = params["PROPNAME"]
-        self._sw_version = params["VER"]
-        self._mode = params["MODE"]
+        self._propName = params[PROPNAME_ATTR]
+        self._sw_version = params[VER_ATTR]
+        self._mode = params[MODE_ATTR]
         # here we compute what is expected to be a unique_id
         # from the internal name of the system object
         h = blake2b(digest_size=8)
-        h.update(params["SNAME"].encode())
+        h.update(params[SNAME_ATTR].encode())
         self._unique_id = h.hexdigest()
 
     @property
@@ -68,9 +80,9 @@ class SystemInfo:
     def update(self, updates):
         """Update the object from a set of key/value pairs."""
         _LOGGER.debug(f"updating system info with {updates}")
-        self._propName = updates.get("PROPNAME", self._propName)
-        self._sw_version = updates.get("VER", self._sw_version)
-        self._mode = updates.get("MODE", self._mode)
+        self._propName = updates.get(PROPNAME_ATTR, self._propName)
+        self._sw_version = updates.get(VER_ATTR, self._sw_version)
+        self._mode = updates.get(MODE_ATTR, self._mode)
 
 
 # -------------------------------------------------------------------------------------
@@ -133,9 +145,12 @@ class BaseController:
         msg = await self.sendCmd(
             "GetParamList",
             {
-                "condition": "OBJTYP=SYSTEM",
+                "condition": f"{OBJTYP_ATTR}={SYSTEM_TYPE}",
                 "objectList": [
-                    {"objnam": "INCR", "keys": ["SNAME", "VER", "PROPNAME", "MODE"]}
+                    {
+                        "objnam": "INCR",
+                        "keys": SystemInfo.ATTRIBUTES_LIST,
+                    }
                 ],
             },
         )
@@ -290,7 +305,9 @@ class ModelController(BaseController):
         await super().start()
 
         # now we retrieve all the objects type, subtype, sname and parent
-        allObjects = await self.getAllObjects(["OBJTYP", "SUBTYP", "SNAME", "PARENT"])
+        allObjects = await self.getAllObjects(
+            [OBJTYP_ATTR, SUBTYP_ATTR, SNAME_ATTR, PARENT_ATTR]
+        )
         # and process that list into our model
         self.model.addObjects(allObjects)
 

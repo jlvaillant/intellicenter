@@ -6,12 +6,18 @@ from typing import Any, Dict
 
 from homeassistant.components.light import ATTR_EFFECT, SUPPORT_EFFECT, LightEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import callback
 from homeassistant.helpers.typing import HomeAssistantType
 
 from . import PoolEntity
 from .const import DOMAIN
-from .pyintellicenter import ModelController, PoolObject
+from .pyintellicenter import (
+    ACT_ATTR,
+    CIRCUIT_ATTR,
+    STATUS_ATTR,
+    USE_ATTR,
+    ModelController,
+    PoolObject,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -55,7 +61,7 @@ async def async_setup_entry(
             supportColorEffects = reduce(
                 lambda x, y: x and y,
                 map(
-                    lambda obj: controller.model[obj["CIRCUIT"]].supportColorEffects,
+                    lambda obj: controller.model[obj[CIRCUIT_ATTR]].supportColorEffects,
                     controller.model.getChildren(object),
                 ),
                 True,
@@ -85,7 +91,7 @@ class PoolLight(PoolEntity, LightEntity):
         """Initialize."""
         super().__init__(entry, controller, poolObject)
         # USE appears to contain extra info like color...
-        self._extraStateAttributes = ["USE"]
+        self._extraStateAttributes = [USE_ATTR]
 
         self._features = 0
 
@@ -110,7 +116,7 @@ class PoolLight(PoolEntity, LightEntity):
     @property
     def effect(self) -> str:
         """Return the current effect."""
-        return self._lightEffects.get(self._poolObject["USE"])
+        return self._lightEffects.get(self._poolObject[USE_ATTR])
 
     @property
     def is_on(self) -> bool:
@@ -119,26 +125,24 @@ class PoolLight(PoolEntity, LightEntity):
 
     def turn_off(self, **kwargs: Any) -> None:
         """Turn off the light."""
-        self.requestChanges({"STATUS": "OFF"})
+        self.requestChanges({STATUS_ATTR: "OFF"})
 
     def turn_on(self, **kwargs: Any) -> None:
         """Turn on the light."""
 
-        changes = {"STATUS": self._poolObject.onStatus}
+        changes = {STATUS_ATTR: self._poolObject.onStatus}
 
         if ATTR_EFFECT in kwargs:
             effect = kwargs[ATTR_EFFECT]
             new_use = self._reversedLightEffects.get(effect)
             if new_use:
-                changes["ACT"] = new_use
+                changes[ACT_ATTR] = new_use
 
         self.requestChanges(changes)
 
-    @callback
-    def _update_callback(self, updates: Dict[str, PoolObject]):
-        """Update the entity if its underlying pool object has changed."""
+    def isUpdated(self, updates: Dict[str, Dict[str, str]]) -> bool:
+        """Return true if the entity is updated by the updates from Intellicenter."""
 
-        if self._poolObject.objnam in updates:
-            self._available = True
-            _LOGGER.debug(f"updating {self} from {self._poolObject}")
-            self.async_write_ha_state()
+        myUpdates = updates.get(self._poolObject.objnam, {})
+
+        return myUpdates and {STATUS_ATTR, USE_ATTR} & myUpdates.keys()

@@ -9,9 +9,21 @@ from homeassistant.helpers.typing import HomeAssistantType
 
 from . import PoolEntity
 from .const import DOMAIN
-from .pyintellicenter import ModelController, PoolObject
+from .pyintellicenter import (
+    BODY_TYPE,
+    CIRCUIT_TYPE,
+    HEATER_ATTR,
+    HTMODE_ATTR,
+    SYSTEM_TYPE,
+    VACFLO_ATTR,
+    VOL_ATTR,
+    ModelController,
+    PoolObject,
+)
 
 _LOGGER = logging.getLogger(__name__)
+
+# -------------------------------------------------------------------------------------
 
 
 async def async_setup_entry(
@@ -24,16 +36,30 @@ async def async_setup_entry(
 
     object: PoolObject
     for object in controller.model.objectList:
-        if object.objtype == "BODY":
+        if object.objtype == BODY_TYPE:
             switches.append(PoolBody(entry, controller, object))
         elif (
-            object.objtype == "CIRCUIT"
+            object.objtype == CIRCUIT_TYPE
             and not (object.isALight or object.isALightShow)
             and object.isFeatured
         ):
             switches.append(PoolCircuit(entry, controller, object))
+        elif object.objtype == SYSTEM_TYPE:
+            switches.append(
+                PoolCircuit(
+                    entry,
+                    controller,
+                    object,
+                    VACFLO_ATTR,
+                    name="Vacation mode",
+                    enabled_by_default=False,
+                )
+            )
 
     async_add_entities(switches)
+
+
+# -------------------------------------------------------------------------------------
 
 
 class PoolCircuit(PoolEntity, SwitchEntity):
@@ -53,13 +79,16 @@ class PoolCircuit(PoolEntity, SwitchEntity):
         self.requestChanges({self._attribute_key: self._poolObject.onStatus})
 
 
+# -------------------------------------------------------------------------------------
+
+
 class PoolBody(PoolCircuit):
     """Representation of a body of water."""
 
     def __init__(self, entry: ConfigEntry, controller, poolObject):
         """Initialize a Pool body from the underlying circuit."""
         super().__init__(entry, controller, poolObject)
-        self._extraStateAttributes = ["VOL", "HEATER", "HTMODE"]
+        self._extraStateAttributes = [VOL_ATTR, HEATER_ATTR, HTMODE_ATTR]
 
     @property
     def icon(self):

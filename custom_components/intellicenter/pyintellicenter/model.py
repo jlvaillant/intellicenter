@@ -3,7 +3,16 @@
 import logging
 from typing import List
 
-from .attributes import ALL_ATTRIBUTES_BY_TYPE
+from .attributes import (
+    ALL_ATTRIBUTES_BY_TYPE,
+    CIRCUIT_TYPE,
+    FEATR_ATTR,
+    OBJTYP_ATTR,
+    PARENT_ATTR,
+    SNAME_ATTR,
+    STATUS_ATTR,
+    SUBTYP_ATTR,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -16,8 +25,8 @@ class PoolObject:
     def __init__(self, objnam, params):
         """Initialize."""
         self._objnam = objnam
-        self._objtyp = params.pop("OBJTYP")
-        self._subtyp = params.pop("SUBTYP", None)
+        self._objtyp = params.pop(OBJTYP_ATTR)
+        self._subtyp = params.pop(SUBTYP_ATTR, None)
         self._properties = params
 
     @property
@@ -28,7 +37,7 @@ class PoolObject:
     @property
     def sname(self):
         """Return the friendly name (SNAME)."""
-        return self._properties.get("SNAME")
+        return self._properties.get(SNAME_ATTR)
 
     @property
     def objtype(self):
@@ -43,7 +52,7 @@ class PoolObject:
     @property
     def status(self) -> str:
         """Return the object status."""
-        return self._properties.get("STATUS")
+        return self._properties.get(STATUS_ATTR)
 
     @property
     def offStatus(self) -> str:
@@ -58,7 +67,7 @@ class PoolObject:
     @property
     def isALight(self) -> bool:
         """Return True is the object is a light."""
-        return self.objtype == "CIRCUIT" and self.subtype in [
+        return self.objtype == CIRCUIT_TYPE and self.subtype in [
             "LIGHT",
             "INTELLI",
             "GLOW",
@@ -75,12 +84,12 @@ class PoolObject:
     @property
     def isALightShow(self) -> bool:
         """Return True is the object is a light show."""
-        return self.objtype == "CIRCUIT" and self.subtype == "LITSHO"
+        return self.objtype == CIRCUIT_TYPE and self.subtype == "LITSHO"
 
     @property
     def isFeatured(self) -> bool:
         """Return True is the object is Featured."""
-        return self["FEATR"] == "ON"
+        return self[FEATR_ATTR] == "ON"
 
     def __getitem__(self, key):
         """Return the value for attribure 'key'."""
@@ -119,9 +128,9 @@ class PoolObject:
                     continue
 
             # there are a few case when we receive the type/subtype in an update
-            if key == "OBJTYP":
+            if key == OBJTYP_ATTR:
                 self._objtyp = value
-            elif key == "SUBTYP":
+            elif key == SUBTYP_ATTR:
                 self._subtyp = value
             else:
                 self._properties[key] = value
@@ -182,7 +191,7 @@ class PoolModel:
 
     def getChildren(self, object: PoolObject) -> List[PoolObject]:
         """Return the children of a given object."""
-        return list(filter(lambda v: v["PARENT"] == object.objnam, self))
+        return list(filter(lambda v: v[PARENT_ATTR] == object.objnam, self))
 
     def addObject(self, objnam, params):
         """Update the model with a new object."""

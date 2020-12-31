@@ -22,7 +22,41 @@ from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.typing import ConfigType
 
 from .const import DOMAIN
-from .pyintellicenter import ConnectionHandler, ModelController, PoolModel, PoolObject
+from .pyintellicenter import (
+    ACT_ATTR,
+    BODY_ATTR,
+    BODY_TYPE,
+    CHEM_TYPE,
+    CIRCGRP_TYPE,
+    CIRCUIT_ATTR,
+    CIRCUIT_TYPE,
+    FEATR_ATTR,
+    GPM_ATTR,
+    HEATER_ATTR,
+    HEATER_TYPE,
+    HTMODE_ATTR,
+    LISTORD_ATTR,
+    LOTMP_ATTR,
+    LSTTMP_ATTR,
+    MODE_ATTR,
+    PUMP_TYPE,
+    PWR_ATTR,
+    RPM_ATTR,
+    SCHED_TYPE,
+    SENSE_TYPE,
+    SNAME_ATTR,
+    SOURCE_ATTR,
+    STATUS_ATTR,
+    SUBTYP_ATTR,
+    SYSTEM_TYPE,
+    USE_ATTR,
+    VACFLO_ATTR,
+    VOL_ATTR,
+    ConnectionHandler,
+    ModelController,
+    PoolModel,
+    PoolObject,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,6 +69,8 @@ PLATFORMS = [
     WATER_HEATER_DOMAIN,
 ]
 
+# -------------------------------------------------------------------------------------
+
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the Pentair IntelliCenter Integration."""
@@ -44,28 +80,24 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up IntelliCenter integration from a config entry."""
 
-    # we don't need some of the system objects
-    def ignoreFunc(object):
-        """Return False for the objects we want to ignore."""
-
-        return (
-            object.objtype
-            in [
-                "PANEL",
-                "MODULE",
-                "PERMIT",
-                "SYSTIM",
-            ]
-            or object.subtype in ["LEGACY"]
-        )
-
     attributes_map = {
-        "BODY": {"SNAME", "HEATER", "HTMODE", "LOTMP", "LSTTMP", "STATUS"},
-        "CIRCUIT": {"SNAME", "STATUS", "USE", "SUBTYPE", "FEATR"},
-        "CIRCGRP": {"CIRCUIT"},
-        "HEATER": {"SNAME", "BODY"},
-        "PUMP": {"SNAME", "STATUS", "PWR", "RPM", "GPM"},
-        "SENSE": {"SNAME", "SOURCE"},
+        BODY_TYPE: {
+            SNAME_ATTR,
+            HEATER_ATTR,
+            HTMODE_ATTR,
+            LOTMP_ATTR,
+            LSTTMP_ATTR,
+            STATUS_ATTR,
+            VOL_ATTR,
+        },
+        CIRCUIT_TYPE: {SNAME_ATTR, STATUS_ATTR, USE_ATTR, SUBTYP_ATTR, FEATR_ATTR},
+        CIRCGRP_TYPE: {CIRCUIT_ATTR},
+        CHEM_TYPE: {},
+        HEATER_TYPE: {SNAME_ATTR, BODY_ATTR, LISTORD_ATTR},
+        PUMP_TYPE: {SNAME_ATTR, STATUS_ATTR, PWR_ATTR, RPM_ATTR, GPM_ATTR},
+        SENSE_TYPE: {SNAME_ATTR, SOURCE_ATTR},
+        SCHED_TYPE: {SNAME_ATTR, ACT_ATTR, VACFLO_ATTR},
+        SYSTEM_TYPE: {MODE_ATTR, VACFLO_ATTR},
     }
     model = PoolModel(attributes_map)
 
@@ -167,6 +199,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
+# -------------------------------------------------------------------------------------
+
+
 class PoolEntity(Entity):
     """Representation of an Pool entity linked to an pool object."""
 
@@ -175,17 +210,20 @@ class PoolEntity(Entity):
         entry: ConfigEntry,
         controller: ModelController,
         poolObject: PoolObject,
-        attribute_key="STATUS",
-        name_suffix="",
+        attribute_key=STATUS_ATTR,
+        name=None,
+        enabled_by_default=True,
+        extraStateAttributes=set(),
     ):
         """Initialize a Pool entity."""
         self._entry_id = entry.entry_id
         self._controller = controller
         self._poolObject = poolObject
         self._available = True
-        self._extraStateAttributes = []
-        self._name_suffix = name_suffix
+        self._extraStateAttributes = extraStateAttributes
+        self._name = name
         self._attribute_key = attribute_key
+        self._enabled_by_default = enabled_by_default
 
         _LOGGER.debug(f"mapping {poolObject}")
 
@@ -210,6 +248,11 @@ class PoolEntity(Entity):
         _LOGGER.debug(f"removing entity: {self.unique_id}")
 
     @property
+    def entity_registry_enabled_default(self):
+        """Return True if the entity is enabled by default."""
+        return self._enabled_by_default
+
+    @property
     def available(self):
         """Return True is the entity is available."""
         return self._available
@@ -217,16 +260,21 @@ class PoolEntity(Entity):
     @property
     def name(self):
         """Return the name of the entity."""
-        name = self._poolObject.sname
-        if self._name_suffix:
-            name += " " + self._name_suffix
-        return name
+
+        if self._name is None:
+            # default is to return the name of the underlying pool object
+            return self._poolObject.sname
+        elif self._name.startswith("+"):
+            # name is a suffix
+            return self._poolObject.sname + self._name[1:]
+        else:
+            return self._name
 
     @property
     def unique_id(self):
         """Return a unique ID."""
         my_id = self._entry_id + self._poolObject.objnam
-        if self._attribute_key != "STATUS":
+        if self._attribute_key != STATUS_ATTR:
             my_id += self._attribute_key
         return my_id
 
@@ -279,14 +327,18 @@ class PoolEntity(Entity):
             self._poolObject.objnam, changes, waitForResponse=False
         )
 
+    def isUpdated(self, updates: Dict[str, Dict[str, str]]) -> bool:
+        """Return true if the entity is updated by the updates from Intellicenter."""
+
+        return self._attribute_key in updates.get(self._poolObject.objnam, {})
+
     @callback
     def _update_callback(self, updates: Dict[str, Dict[str, str]]):
         """Update the entity if its underlying pool object has changed."""
 
-        if self._attribute_key in updates.get(self._poolObject.objnam, {}):
+        if self.isUpdated(updates):
             self._available = True
-            my_updates = updates.get(self._poolObject.objnam)
-            _LOGGER.debug(f"updating {self} from {my_updates}")
+            _LOGGER.debug(f"updating {self} from {updates}")
             self.async_write_ha_state()
 
     @callback
