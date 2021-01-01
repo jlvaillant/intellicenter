@@ -17,8 +17,9 @@
 
 - Connect to a Pentair Intellicenter thru the local (network) interface
 - supports Zeroconf discovery
-- reconnects itself grafecully in the Intellicenter reboots and/or gets disconnected
+- reconnects itself gracefully in the Intellicenter reboots and/or gets disconnected
 - "Local push" makes system very responsive
+- The integration works independently of the security setting on the Intellicenter
 
 ### Entities created
 
@@ -26,16 +27,27 @@
     - a switch to turn the body on and off
     - a sensor for the last temperature
     - a sensor for the desired temperature
-    - a water heater (if applicable):
-        - set to ON to enable that heater, set to OFF otherwise
+    - a water heater entity (if applicable):
+        - choose a heater from the list to enable it, set to OFF otherwise
         - status is 'OFF', 'IDLE' (if heater is enabled but NOT running) or
-          'HEATING' is the heater is currently running
+          'ON' is the heater is currently running
+        Note that the water heater supports turn_on and turn_off operations.
+        for turn_on, it will reuse the last heater chosen.
+- for each heater, a binary sensor will indicate is the heater is running
+  independently of which body is heating
 - creates a switch for all circuits marked as "Featured" on the IntelliCenter
   (for example "Cleaner" or "Spa Blower)
 - for each light (and light show) it creates a Light entity
-  Note that color effects are only implemented for IntelliBrite lights
+  Note that color effects are only supported for IntelliBrite or MagicStream lights
+- for each schedule, a binary_sensor will indicate if the schedule is currently running
+  Note that these entities are disabled by default
+- if the pool has a IntelliChem unit, sensors will be created for
+  ph level, ORP level, ph tank level and ORP tank level
+- a switch controls "Vacation mode". It's disabled by default
 - for each pump, a binary_sensor is created
-  if the pump supports it, a sensor will reflect how much power the pump uses
+  if the pump supports these features, sensors will reflect power consumption, RPM and GPM
+  Note that the power usage is rounded to the nearest 25W to reduced the amount of changes in HA
+  Also note that depending on the setting of the pump, RPM or GPM can fluctuate constantly.
 - a binary_sensor will indicate if the system is in Freeze prevention mode
 - sensors will be created for each sensor in the system (like Water and Air)
   Note that a Solar sensor might also be present even if (like in my case) its value
@@ -49,11 +61,12 @@
 
 ### Caveats
 
-- the use of a password on the IntelliCenter is NOT supported
-- schedules are not reflected in HomeAssistant (though they keep running)
-- while I tried to make the code as generic as possible I could only test using
+- while I tried to make the code as robust as possible I could only test using
   my own pool configuration. In particular, I do not have covers, chemistry, cascades,
-  solar heater, etc... These may work out of the box or not...
+  multiple heaters, etc... These may work out of the box or not...
+- while the choice is metric/english on the Intellicenter is handled, changing it
+  while the integration is running can lead to some values being off.
+- In general it is recommended to reload the integration where significant changes are done to the pool configuration
 
 [hacs]: https://github.com/custom-components/hacs
 [hacsbadge]: https://img.shields.io/badge/HACS-Custom-orange
