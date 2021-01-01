@@ -17,9 +17,11 @@ from . import PoolEntity
 from .const import DOMAIN
 from .pyintellicenter import (
     BODY_ATTR,
+    BODY_TYPE,
     HEATER_ATTR,
     HEATER_TYPE,
     HTMODE_ATTR,
+    LISTORD_ATTR,
     LOTMP_ATTR,
     LSTTMP_ATTR,
     NULL_OBJNAM,
@@ -43,21 +45,25 @@ async def async_setup_entry(
     # body of water
 
     # first find all heaters
-    heaters = [object for object in controller.model if object.objtype == HEATER_TYPE]
+    # and sort them by their UI order (if they don't have one, use 100 and place them last)
+    heaters = sorted(
+        controller.model.getByType(HEATER_TYPE),
+        key=lambda h: h[LISTORD_ATTR] if h[LISTORD_ATTR] else 100,
+    )
 
-    # then for each heater, find which bodies it handles
-    body_to_heater_map = {}
-    for heater in heaters:
-        bodies = heater[BODY_ATTR].split(" ")
-        for body_id in bodies:
-            body_to_heater_map[body_id] = heater.objnam
+    bodies = controller.model.getByType(BODY_TYPE)
 
     water_heaters = []
-
-    for (body_id, heater_id) in body_to_heater_map.items():
-        body = controller.model[body_id]
-        if body:
-            water_heaters.append(PoolWaterHeater(entry, controller, body, heater_id))
+    body: PoolObject
+    for body in bodies:
+        heater_list = []
+        heater: PoolObject
+        for heater in heaters:
+            # if the heater supports this body, add it to the list
+            if body.objnam in heater[BODY_ATTR].split(" "):
+                heater_list.append(heater.objnam)
+        if heater_list:
+            water_heaters.append(PoolWaterHeater(entry, controller, body, heater_list))
 
     async_add_entities(water_heaters)
 
@@ -75,7 +81,7 @@ class PoolWaterHeater(PoolEntity, WaterHeaterEntity, RestoreEntity):
         entry: ConfigEntry,
         controller: ModelController,
         poolObject: PoolObject,
-        heater_id,
+        heater_list,
     ):
         """Initialize."""
         super().__init__(
@@ -84,7 +90,7 @@ class PoolWaterHeater(PoolEntity, WaterHeaterEntity, RestoreEntity):
             poolObject,
             extraStateAttributes=[HEATER_ATTR, HTMODE_ATTR],
         )
-        self._heater_id = heater_id
+        self._heater_list = heater_list
         self._lastHeater = self._poolObject[HEATER_ATTR]
 
     @property
@@ -103,11 +109,10 @@ class PoolWaterHeater(PoolEntity, WaterHeaterEntity, RestoreEntity):
         """Return the current state."""
         status = self._poolObject[STATUS_ATTR]
         heater = self._poolObject[HEATER_ATTR]
-        htmode = self._poolObject[HTMODE_ATTR]
         if status == "OFF" or heater == NULL_OBJNAM:
             return STATE_OFF
-        if heater == self._heater_id:
-            return STATE_ON if htmode != "0" else STATE_IDLE
+        htmode = self._poolObject[HTMODE_ATTR]
+        return STATE_ON if htmode != "0" else STATE_IDLE
 
     @property
     def unique_id(self):
@@ -158,33 +163,41 @@ class PoolWaterHeater(PoolEntity, WaterHeaterEntity, RestoreEntity):
     def current_operation(self):
         """Return current operation."""
         heater = self._poolObject[HEATER_ATTR]
-        if heater == self._heater_id:
-            return self._controller.model[self._heater_id].sname
+        if heater in self._heater_list:
+            return self._controller.model[heater].sname
         return STATE_OFF
 
     @property
     def operation_list(self):
         """Return the list of available operation modes."""
-        return [STATE_OFF, self._controller.model[self._heater_id].sname]
+        return [STATE_OFF] + [
+            self._controller.model[heater].sname for heater in self._heater_list
+        ]
 
     def set_operation_mode(self, operation_mode):
         """Set new target operation mode."""
         if operation_mode == STATE_OFF:
             self._turnOff()
-        elif operation_mode == self._controller.model[self._heater_id].sname:
-            self.requestChanges({HEATER_ATTR: self._heater_id})
+        else:
+            for heater in self._heater_list:
+                if operation_mode == self._controller.model[heater].sname:
+                    self.requestChanges({HEATER_ATTR: heater})
+                    break
 
     async def async_turn_on(self) -> None:
         """Turn the entity on."""
-        if self._lastHeater:
-            self.requestChanges({HEATER_ATTR: self._lastHeater})
+        heater = (
+            self._lastHeater
+            if self._lastHeater != NULL_OBJNAM
+            else self._heater_list[0]
+        )
+        self.requestChanges({HEATER_ATTR: heater})
 
     async def async_turn_off(self) -> None:
         """Turn the entity off."""
         self._turnOff()
 
     def _turnOff(self):
-        self._lastHeater = self._poolObject[HEATER_ATTR]
         self.requestChanges({HEATER_ATTR: NULL_OBJNAM})
 
     def isUpdated(self, updates: Dict[str, Dict[str, str]]) -> bool:
@@ -192,11 +205,16 @@ class PoolWaterHeater(PoolEntity, WaterHeaterEntity, RestoreEntity):
 
         myUpdates = updates.get(self._poolObject.objnam, {})
 
-        return (
+        updated = (
             myUpdates
             and {STATUS_ATTR, HEATER_ATTR, HTMODE_ATTR, LOTMP_ATTR, LSTTMP_ATTR}
             & myUpdates.keys()
         )
+
+        if updated and self._poolObject[HEATER_ATTR] != NULL_OBJNAM:
+            self._lastHeater = self._poolObject[HEATER_ATTR]
+
+        return updated
 
     async def async_added_to_hass(self):
         """Entity is added to Home Assistant."""
@@ -210,5 +228,5 @@ class PoolWaterHeater(PoolEntity, WaterHeaterEntity, RestoreEntity):
 
             if last_state:
                 value = last_state.attributes.get(self.LAST_HEATER_ATTR)
-                if value:
+                if value != NULL_OBJNAM:
                     self._lastHeater = value
