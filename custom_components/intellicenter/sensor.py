@@ -121,67 +121,73 @@ async def async_setup_entry(
             )
         elif object.objtype == CHEM_TYPE:
             if object.subtype == "ICHLOR":
-                sensors.append(
-                    PoolSensor(
-                        entry,
-                        controller,
-                        object,
-                        device_class=None,
-                        attribute_key=PHVAL_ATTR,
-                        name="+ (pH)",
+                if PHVAL_ATTR in object.attributes:
+                    sensors.append(
+                        PoolSensor(
+                            entry,
+                            controller,
+                            object,
+                            device_class=None,
+                            attribute_key=PHVAL_ATTR,
+                            name="+ (pH)",
+                        )
                     )
-                )
-                sensors.append(
-                    PoolSensor(
-                        entry,
-                        controller,
-                        object,
-                        device_class=None,
-                        attribute_key=ORPVAL_ATTR,
-                        name="+ (ORP)",
+                if ORPVAL_ATTR in object.attributes:
+                    sensors.append(
+                        PoolSensor(
+                            entry,
+                            controller,
+                            object,
+                            device_class=None,
+                            attribute_key=ORPVAL_ATTR,
+                            name="+ (ORP)",
+                        )
                     )
-                )
-                sensors.append(
-                    PoolSensor(
-                        entry,
-                        controller,
-                        object,
-                        device_class=None,
-                        attribute_key=SALT_ATTR,
-                        name="+ (Salt)",
+                if SALT_ATTR in object.attributes:
+                    sensors.append(
+                        PoolSensor(
+                            entry,
+                            controller,
+                            object,
+                            device_class=None,
+                            attribute_key=SALT_ATTR,
+                            name="+ (Salt)",
+                        )
                     )
-                )
-                sensors.append(
-                    PoolSensor(
-                        entry,
-                        controller,
-                        object,
-                        device_class=None,
-                        attribute_key=QUALTY_ATTR,
-                        name="+ (Water Quality)",
+                if QUALTY_ATTR in object.attributes:
+                    sensors.append(
+                        PoolSensor(
+                            entry,
+                            controller,
+                            object,
+                            device_class=None,
+                            attribute_key=QUALTY_ATTR,
+                            name="+ (Water Quality)",
+                        )
                     )
-                )
-                sensors.append(
-                    PoolSensor(
-                        entry,
-                        controller,
-                        object,
-                        device_class=None,
-                        attribute_key=PHTNK_ATTR,
-                        name_="+ (Ph Tank Level)",
+                if PHTNK_ATTR in object.attributes:
+                    sensors.append(
+                        PoolSensor(
+                            entry,
+                            controller,
+                            object,
+                            device_class=None,
+                            attribute_key=PHTNK_ATTR,
+                            name="+ (Ph Tank Level)",
+                        )
                     )
-                )
                 # should this be a factor only if there is not IntelliChlor?
-                sensors.append(
-                    PoolSensor(
-                        entry,
-                        controller,
-                        object,
-                        device_class=None,
-                        attribute_key=ORPTNK_ATTR,
-                        name="+ (ORP Tank Level)",
+                if ORPTNK_ATTR in object.attributes:
+                    sensors.append(
+                        PoolSensor(
+                            entry,
+                            controller,
+                            object,
+                            device_class=None,
+                            attribute_key=ORPTNK_ATTR,
+                            name="+ (ORP Tank Level)",
+                        )
                     )
-                )
     async_add_entities(sensors)
 
 
