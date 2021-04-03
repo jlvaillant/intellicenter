@@ -126,6 +126,7 @@ async def async_setup_entry(
                         entry,
                         controller,
                         object,
+                        device_class=None,
                         attribute_key=PHVAL_ATTR,
                         name="+ (pH)",
                     )
@@ -135,6 +136,7 @@ async def async_setup_entry(
                         entry,
                         controller,
                         object,
+                        device_class=None,
                         attribute_key=ORPVAL_ATTR,
                         name="+ (ORP)",
                     )
@@ -144,6 +146,7 @@ async def async_setup_entry(
                         entry,
                         controller,
                         object,
+                        device_class=None,
                         attribute_key=SALT_ATTR,
                         name="+ (Salt)",
                     )
@@ -153,6 +156,7 @@ async def async_setup_entry(
                         entry,
                         controller,
                         object,
+                        device_class=None,
                         attribute_key=QUALTY_ATTR,
                         name="+ (Water Quality)",
                     )
@@ -162,6 +166,7 @@ async def async_setup_entry(
                         entry,
                         controller,
                         object,
+                        device_class=None,
                         attribute_key=PHTNK_ATTR,
                         name_="+ (Ph Tank Level)",
                     )
@@ -172,6 +177,7 @@ async def async_setup_entry(
                         entry,
                         controller,
                         object,
+                        device_class=None,
                         attribute_key=ORPTNK_ATTR,
                         name="+ (ORP Tank Level)",
                     )
