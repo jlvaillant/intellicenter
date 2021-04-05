@@ -3,7 +3,7 @@
 import logging
 from typing import Any, Dict, Optional
 
-from homeassistant.config_entries import ConfigFlow
+from homeassistant.config_entries import CONN_CLASS_LOCAL_PUSH, ConfigFlow
 from homeassistant.const import CONF_HOST, CONF_NAME
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.typing import ConfigType
@@ -23,6 +23,8 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
     """Pentair Intellicenter config flow."""
 
     VERSION = 1
+
+    CONNECTION_CLASS = CONN_CLASS_LOCAL_PUSH
 
     def __init__(self):
         """Initialize a new Intellicenter ConfigFlow."""
