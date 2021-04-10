@@ -69,7 +69,7 @@ class SystemInfo:
 
     @property
     def usesMetric(self):
-        """Return True is the system uses metric for temperature units."""
+        """Return True if the system uses metric for temperature units."""
         return self._mode == "METRIC"
 
     @property

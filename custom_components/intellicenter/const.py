@@ -1,4 +1,4 @@
-"""Constants for the Pentair Intelicenter interaion."""
+"""Constants for the Pentair Intelicenter integraion."""
 
 DOMAIN = "intellicenter"
 DEVICE_CLASS_ROTATION_SPEED = "rotational_speed"
