@@ -48,7 +48,7 @@ async def async_setup_entry(
     # and sort them by their UI order (if they don't have one, use 100 and place them last)
     heaters = sorted(
         controller.model.getByType(HEATER_TYPE),
-        key=lambda h: h[LISTORD_ATTR] if h[LISTORD_ATTR] else 100,
+        key=lambda h: int(h[LISTORD_ATTR]) if h[LISTORD_ATTR] else 100,
     )
 
     bodies = controller.model.getByType(BODY_TYPE)
