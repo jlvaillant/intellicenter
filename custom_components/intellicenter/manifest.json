@@ -1,6 +1,7 @@
 {
     "domain": "intellicenter",
     "name": "Pentair IntelliCenter",
+    "version": "1.0.0",
     "documentation": "https://github.com/jlvaillant/intellicenter",
     "issue_tracker": "https://github.com/jlvaillant/intellicenter/issues",
     "codeowners": ["@jlvaillant"],
