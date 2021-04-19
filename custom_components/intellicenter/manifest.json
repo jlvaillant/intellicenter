@@ -8,7 +8,7 @@
     "dependencies": [],
     "config_flow": true,
     "zeroconf": [
-        { "type":"_http._tcp.local.", "name":"Pentair*"}
+        { "type":"_http._tcp.local.", "name":"pentair*" }
       ],
     "quality_scale": "gold"
   }
