@@ -5,6 +5,7 @@ from typing import Optional
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
+    CONCENTRATION_PARTS_PER_MILLION,
     DEVICE_CLASS_ENERGY,
     DEVICE_CLASS_TEMPERATURE,
     POWER_WATT,
@@ -150,6 +151,7 @@ async def async_setup_entry(
                             controller,
                             object,
                             device_class=None,
+                            unit_of_measurement=CONCENTRATION_PARTS_PER_MILLION,
                             attribute_key=SALT_ATTR,
                             name="+ (Salt)",
                         )
