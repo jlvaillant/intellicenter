@@ -37,6 +37,7 @@ ORPVAL_ATTR = "ORPVAL"
 PARENT_ATTR = "PARENT"
 PHVAL_ATTR = "PHVAL"
 PHTNK_ATTR = "PHTNK"
+PRIM_ATTR = "PRIM"
 PROPNAME_ATTR = "PROPNAME"
 PWR_ATTR = "PWR"
 QUALTY_ATTR = "QUALTY"
@@ -47,6 +48,7 @@ SELECT_ATTR = "SELECT"
 SHOMNU_ATTR = "SHOMNU"
 SNAME_ATTR = "SNAME"
 SOURCE_ATTR = "SOURCE"
+SPEED_ATTR = "SPEED"
 STATIC_ATTR = "STATIC"
 STATUS_ATTR = "STATUS"
 SUBTYP_ATTR = "SUBTYP"
@@ -131,7 +133,7 @@ CHEM_ATTRIBUTES = {
     "PHSET",  # (float) IntelliChem Ph level setting
     PHTNK_ATTR,  # (int) IntelliChem: Ph Tank Level
     PHVAL_ATTR,  # (float) IntelliChem: Ph Level
-    "PRIM",  # (int) Intellichor: output setting in %
+    PRIM_ATTR,  # (int) Intellichor: output setting in %
     QUALTY_ATTR,  # (float) Intellichem: Water Quality (Saturation Index)
     SALT_ATTR,  # (int) Salt level
     "SEC",  # (int) IntelliChlor ??
@@ -263,7 +265,7 @@ PMPCIRC_ATTRIBUTES = {
     GPM_ATTR,  # (int): the flow setting for the pump if select is GPM
     LISTORD_ATTR,  # (int) used to order in UI
     PARENT_ATTR,  # (objnam) the pump the setting belongs to
-    "SPEED",  # (int): the speed setting for the pump if select is RPM
+    SPEED_ATTR,  # (int): the speed setting for the pump if select is RPM
     SELECT_ATTR,  # 'RPM' or 'GPM'
 }
 

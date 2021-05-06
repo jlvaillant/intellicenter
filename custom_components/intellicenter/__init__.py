@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional
 
 from homeassistant.components.binary_sensor import DOMAIN as BINARY_SENSOR_DOMAIN
 from homeassistant.components.light import DOMAIN as LIGHT_DOMAIN
+from homeassistant.components.number import DOMAIN as NUMBER_DOMAIN
 from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
 from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
 from homeassistant.components.water_heater import DOMAIN as WATER_HEATER_DOMAIN
@@ -67,6 +68,7 @@ PLATFORMS = [
     SWITCH_DOMAIN,
     BINARY_SENSOR_DOMAIN,
     WATER_HEATER_DOMAIN,
+    NUMBER_DOMAIN,
 ]
 
 # -------------------------------------------------------------------------------------
