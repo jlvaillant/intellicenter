@@ -13,8 +13,9 @@ from .pyintellicenter import (
     CHEM_TYPE,
     PRIM_ATTR,
     PUMP_TYPE,
-    SPEED_ATTR,
+    RPM_ATTR,
     SALT_ATTR,
+    SPEED_ATTR,
     ModelController,
     PoolObject,
 )
@@ -41,23 +42,25 @@ async def async_setup_entry(
                 entry,
                 controller,
                 object,
-                # unit_of_measurement=CONST_RPM,
-                attribute_key=SPEED_ATTR,
+                unit_of_measurement=CONST_RPM,
+                attribute_key=RPM_ATTR,
+                set_attribute_key=SPEED_ATTR,
+                set_obj_name="p0101", # TODO: don't hardcode this
                 name="+ rpm"
               )
             )
-        # elif object.objtype == CHEM_TYPE:
-        #     if object.subtype == "ICHLOR":
-        #         if SALT_ATTR in object.attributes:
-        #             numbers.append(
-        #                 PoolNumber(
-        #                     entry,
-        #                     controller,
-        #                     object,
-        #                     attribute_key=PRIM_ATTR,
-        #                     name="+ (Salt)",
-        #                 )
-        #             )
+        elif object.objtype == CHEM_TYPE:
+            if object.subtype == "ICHLOR":
+                if SALT_ATTR in object.attributes:
+                    numbers.append(
+                        PoolNumber(
+                            entry,
+                            controller,
+                            object,
+                            attribute_key=PRIM_ATTR,
+                            name="+ (Salt)",
+                        )
+                    )
     async_add_entities(numbers)
 
 
@@ -67,6 +70,27 @@ async def async_setup_entry(
 class PoolNumber(PoolEntity, NumberEntity):
     """Representation of an Pentair number."""
 
+    def __init__(
+        self,
+        entry: ConfigEntry,
+        controller: ModelController,
+        poolObject: PoolObject,
+        unit_of_measurement: str = None,
+        set_attribute_key: str = None,
+        set_obj_name: str = None,
+        **kwargs,
+    ):
+        """Initialize."""
+        super().__init__(entry, controller, poolObject, **kwargs)
+        self._set_attribute_key = set_attribute_key
+        self._set_obj_name = set_obj_name
+        self._unit_of_measurement = unit_of_measurement
+
+    @property
+    def unit_of_measurement(self) -> Optional[str]:
+        """Return the unit of measurement of this entity, if any."""
+        return self._unit_of_measurement
+
     @property
     def value(self) -> bool:
         """Return the current value."""
@@ -75,8 +99,9 @@ class PoolNumber(PoolEntity, NumberEntity):
     def set_value(self, value: float) -> None:
         """Update the current value."""
 
-        changes = {self._attribute_key: str(int(value))}
-        # self.requestChanges(changes)
+        key = self._set_attribute_key if self._set_attribute_key else self._attribute_key
+        changes = {key: str(int(value))}
+        obj = self._set_obj_name if self._set_obj_name else self._poolObject.objnam
         self._controller.requestChanges(
-            "p0101", changes, waitForResponse=False
+            obj, changes, waitForResponse=False
         )
