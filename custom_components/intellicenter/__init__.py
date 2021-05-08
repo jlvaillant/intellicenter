@@ -214,6 +214,7 @@ class PoolEntity(Entity):
         name=None,
         enabled_by_default=True,
         extraStateAttributes=set(),
+        icon=None,
     ):
         """Initialize a Pool entity."""
         self._entry_id = entry.entry_id
@@ -224,6 +225,7 @@ class PoolEntity(Entity):
         self._name = name
         self._attribute_key = attribute_key
         self._enabled_by_default = enabled_by_default
+        self._icon = icon
 
         _LOGGER.debug(f"mapping {poolObject}")
 
@@ -269,6 +271,11 @@ class PoolEntity(Entity):
             return self._poolObject.sname + self._name[1:]
         else:
             return self._name
+
+    @property
+    def icon(self):
+        """Return the icon for the entity."""
+        return self._icon
 
     @property
     def unique_id(self):

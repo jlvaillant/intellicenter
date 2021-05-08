@@ -52,6 +52,7 @@ async def async_setup_entry(
                     object,
                     attribute_key=SUPER_ATTR,
                     name="+ Superchlorinate",
+                    icon="mdi:alpha-s-box-outline",
                 )
             )
         elif (
