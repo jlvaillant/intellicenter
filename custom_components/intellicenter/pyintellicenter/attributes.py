@@ -50,6 +50,7 @@ SOURCE_ATTR = "SOURCE"
 STATIC_ATTR = "STATIC"
 STATUS_ATTR = "STATUS"
 SUBTYP_ATTR = "SUBTYP"
+SUPER_ATTR = "SUPER"
 TIME_ATTR = "TIME"
 TIMOUT_ATTR = "TIMOUT"
 USE_ATTR = "USE"
@@ -139,7 +140,7 @@ CHEM_ATTRIBUTES = {
     "SINDEX",  # (int) ??
     SNAME_ATTR,  # friendly name
     SUBTYP_ATTR,  # 'ICHLOR' for IntelliChlor, 'ICHEM' for IntelliChem
-    "SUPER",  # (ON/OFF) IntelliChlor: turn on Boost mode (aka Super Chlorinate)
+    SUPER_ATTR,  # (ON/OFF) IntelliChlor: turn on Boost mode (aka Super Chlorinate)
     TIMOUT_ATTR,  # (int) IntelliChlor: in seconds ??
 }
 CIRCGRP_ATTRIBUTES = {

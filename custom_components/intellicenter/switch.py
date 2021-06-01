@@ -11,9 +11,11 @@ from . import PoolEntity
 from .const import DOMAIN
 from .pyintellicenter import (
     BODY_TYPE,
+    CHEM_TYPE,
     CIRCUIT_TYPE,
     HEATER_ATTR,
     HTMODE_ATTR,
+    SUPER_ATTR,
     SYSTEM_TYPE,
     VACFLO_ATTR,
     VOL_ATTR,
@@ -38,6 +40,21 @@ async def async_setup_entry(
     for object in controller.model.objectList:
         if object.objtype == BODY_TYPE:
             switches.append(PoolBody(entry, controller, object))
+        elif (
+            object.objtype == CHEM_TYPE
+            and object.subtype == "ICHLOR"
+            and SUPER_ATTR in object.attributes
+        ):
+            switches.append(
+                PoolCircuit(
+                    entry,
+                    controller,
+                    object,
+                    attribute_key=SUPER_ATTR,
+                    name="+ Superchlorinate",
+                    icon="mdi:alpha-s-box-outline",
+                )
+            )
         elif (
             object.objtype == CIRCUIT_TYPE
             and not (object.isALight or object.isALightShow)
