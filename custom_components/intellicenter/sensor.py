@@ -221,17 +221,17 @@ class PoolSensor(PoolEntity):
         self._device_class
 
     @property
-    def state(self):
+    def state(self) -> str:
         """Return the state of the sensor."""
 
-        value = int(self._poolObject[self._attribute_key])
+        value = str(self._poolObject[self._attribute_key])
 
         # some sensors, like variable speed pumps, can vary constantly
         # so rounding their value to a nearest multiplier of 'rounding'
         # smoothes the curve and limits the number of updates in the log
 
         if self._rounding_factor:
-            value = int(round(value / self._rounding_factor) * self._rounding_factor)
+            value = str(int(round(value / self._rounding_factor) * self._rounding_factor))
 
         return value
 
