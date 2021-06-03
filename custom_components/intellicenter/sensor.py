@@ -231,7 +231,7 @@ class PoolSensor(PoolEntity):
         # smoothes the curve and limits the number of updates in the log
 
         if self._rounding_factor:
-            value = str(int(round(value / self._rounding_factor) * self._rounding_factor))
+            value = str(int(round(int(value) / self._rounding_factor) * self._rounding_factor))
 
         return value
 
