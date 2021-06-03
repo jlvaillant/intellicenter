@@ -1,6 +1,7 @@
 {
     "domain": "intellicenter",
     "name": "Pentair IntelliCenter",
+    "version": "1.0.0",
     "documentation": "https://github.com/jlvaillant/intellicenter",
     "issue_tracker": "https://github.com/jlvaillant/intellicenter/issues",
     "codeowners": ["@jlvaillant"],
@@ -8,7 +9,7 @@
     "dependencies": [],
     "config_flow": true,
     "zeroconf": [
-        { "type":"_http._tcp.local.", "name":"Pentair*"}
+        { "type":"_http._tcp.local.", "name":"pentair*" }
       ],
     "quality_scale": "gold"
   }
