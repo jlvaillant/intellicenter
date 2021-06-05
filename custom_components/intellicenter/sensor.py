@@ -121,7 +121,7 @@ async def async_setup_entry(
                 )
             )
         elif object.objtype == CHEM_TYPE:
-            if object.subtype == "ICHLOR":
+            if object.subtype == "ICHEM":
                 if PHVAL_ATTR in object.attributes:
                     sensors.append(
                         PoolSensor(
@@ -142,18 +142,6 @@ async def async_setup_entry(
                             device_class=None,
                             attribute_key=ORPVAL_ATTR,
                             name="+ (ORP)",
-                        )
-                    )
-                if SALT_ATTR in object.attributes:
-                    sensors.append(
-                        PoolSensor(
-                            entry,
-                            controller,
-                            object,
-                            device_class=None,
-                            unit_of_measurement=CONCENTRATION_PARTS_PER_MILLION,
-                            attribute_key=SALT_ATTR,
-                            name="+ (Salt)",
                         )
                     )
                 if QUALTY_ATTR in object.attributes:
@@ -178,7 +166,6 @@ async def async_setup_entry(
                             name="+ (Ph Tank Level)",
                         )
                     )
-                # should this be a factor only if there is not IntelliChlor?
                 if ORPTNK_ATTR in object.attributes:
                     sensors.append(
                         PoolSensor(
@@ -188,6 +175,19 @@ async def async_setup_entry(
                             device_class=None,
                             attribute_key=ORPTNK_ATTR,
                             name="+ (ORP Tank Level)",
+                        )
+                    )
+            elif object.subtype == "ICHLOR":
+                if SALT_ATTR in object.attributes:
+                    sensors.append(
+                        PoolSensor(
+                            entry,
+                            controller,
+                            object,
+                            device_class=None,
+                            unit_of_measurement=CONCENTRATION_PARTS_PER_MILLION,
+                            attribute_key=SALT_ATTR,
+                            name="+ (Salt)",
                         )
                     )
     async_add_entities(sensors)
@@ -221,17 +221,17 @@ class PoolSensor(PoolEntity):
         self._device_class
 
     @property
-    def state(self):
+    def state(self) -> str:
         """Return the state of the sensor."""
 
-        value = int(self._poolObject[self._attribute_key])
+        value = str(self._poolObject[self._attribute_key])
 
         # some sensors, like variable speed pumps, can vary constantly
         # so rounding their value to a nearest multiplier of 'rounding'
         # smoothes the curve and limits the number of updates in the log
 
         if self._rounding_factor:
-            value = int(round(value / self._rounding_factor) * self._rounding_factor)
+            value = str(int(round(int(value) / self._rounding_factor) * self._rounding_factor))
 
         return value
 
