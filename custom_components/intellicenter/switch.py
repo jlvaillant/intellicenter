@@ -25,6 +25,8 @@ from .pyintellicenter import (
 
 _LOGGER = logging.getLogger(__name__)
 
+# FIXME: for freeze swtch use icon mdi:snowflake
+
 # -------------------------------------------------------------------------------------
 
 
