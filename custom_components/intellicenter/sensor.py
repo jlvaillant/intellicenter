@@ -205,14 +205,12 @@ class PoolSensor(PoolEntity):
         controller: ModelController,
         poolObject: PoolObject,
         device_class: str,
-        unit_of_measurement: str = None,
         rounding_factor: int = 0,
         **kwargs,
     ):
         """Initialize."""
         super().__init__(entry, controller, poolObject, **kwargs)
         self._device_class = device_class
-        self._unit_of_measurement = unit_of_measurement
         self._rounding_factor = rounding_factor
 
     @property

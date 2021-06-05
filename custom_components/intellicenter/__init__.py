@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional
 
 from homeassistant.components.binary_sensor import DOMAIN as BINARY_SENSOR_DOMAIN
 from homeassistant.components.light import DOMAIN as LIGHT_DOMAIN
+from homeassistant.components.number import DOMAIN as NUMBER_DOMAIN
 from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
 from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
 from homeassistant.components.water_heater import DOMAIN as WATER_HEATER_DOMAIN
@@ -67,6 +68,7 @@ PLATFORMS = [
     SWITCH_DOMAIN,
     BINARY_SENSOR_DOMAIN,
     WATER_HEATER_DOMAIN,
+    NUMBER_DOMAIN,
 ]
 
 # -------------------------------------------------------------------------------------
@@ -214,7 +216,8 @@ class PoolEntity(Entity):
         name=None,
         enabled_by_default=True,
         extraStateAttributes=set(),
-        icon=None,
+        icon: str = None,
+        unit_of_measurement: str = None,
     ):
         """Initialize a Pool entity."""
         self._entry_id = entry.entry_id
@@ -225,6 +228,7 @@ class PoolEntity(Entity):
         self._name = name
         self._attribute_key = attribute_key
         self._enabled_by_default = enabled_by_default
+        self._unit_of_measurement = unit_of_measurement
         self._icon = icon
 
         _LOGGER.debug(f"mapping {poolObject}")
@@ -273,9 +277,14 @@ class PoolEntity(Entity):
             return self._name
 
     @property
-    def icon(self):
-        """Return the icon for the entity."""
+    def icon(self) -> Optional[str]:
+        """Return the icon for the entity, if any."""
         return self._icon
+
+    @property
+    def unit_of_measurement(self) -> Optional[str]:
+        """Return the unit of measurement of this entity, if any."""
+        return self._unit_of_measurement
 
     @property
     def unique_id(self):

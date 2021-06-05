@@ -37,6 +37,7 @@ ORPVAL_ATTR = "ORPVAL"
 PARENT_ATTR = "PARENT"
 PHVAL_ATTR = "PHVAL"
 PHTNK_ATTR = "PHTNK"
+PRIM_ATTR = "PRIM"
 PROPNAME_ATTR = "PROPNAME"
 PWR_ATTR = "PWR"
 QUALTY_ATTR = "QUALTY"
@@ -132,7 +133,7 @@ CHEM_ATTRIBUTES = {
     "PHSET",  # (float) IntelliChem Ph level setting
     PHTNK_ATTR,  # (int) IntelliChem: Ph Tank Level
     PHVAL_ATTR,  # (float) IntelliChem: Ph Level
-    "PRIM",  # (int) Intellichor: output setting in %
+    PRIM_ATTR,  # (int) Intellichor: output setting in %
     QUALTY_ATTR,  # (float) Intellichem: Water Quality (Saturation Index)
     SALT_ATTR,  # (int) Salt level
     "SEC",  # (int) IntelliChlor ??
