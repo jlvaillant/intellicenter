@@ -41,8 +41,6 @@ class ICProtocol(asyncio.Protocol):
         self._out_pending = 0
         self._out_queue = SimpleQueue()
 
-        # the coroutine for sending regular 'ping' to IntelliCenter
-        self._heartbeat = None
         # and the number of unacknowledgged ping issued
         self._num_unacked_pings = 0
 
@@ -52,18 +50,11 @@ class ICProtocol(asyncio.Protocol):
         self._transport = transport
         self._msgID = 1
 
-        # start a task to send 'ping' every 30s
-        self._heartbeat = asyncio.create_task(self.heartbeat())
-
         # and notify our controller that we are ready!
         self._controller.connection_made(self, transport)
 
     def connection_lost(self, exc):
         """Handle the callback for connection lost."""
-
-        if self._heartbeat:
-            self._heartbeat.cancel()
-            self._heartbeat = None
 
         self._controller.connection_lost(exc)
 
@@ -181,18 +172,3 @@ class ICProtocol(asyncio.Protocol):
 
         except Exception as err:
             _LOGGER.error(f"PROTOCOL: exception while receiving message {err}")
-
-    async def heartbeat(self):
-        """Send a ping every 10s to keep and check that the connection is alive."""
-
-        while self._num_unacked_pings < 2:
-            # we sleep first as there is no need for an immediate ping upon connection
-            await asyncio.sleep(10)
-            _LOGGER.debug("PROTOCOL: sending ping")
-            self.sendRequest("ping")
-            self._num_unacked_pings += 1
-
-        # if we already have sent 2 pings without a pong
-        # we assume the connection went dead and abort
-        _LOGGER.error("PROTOCOL: heartbeat missed, closing connection")
-        self._transport.close()
