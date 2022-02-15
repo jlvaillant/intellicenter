@@ -94,10 +94,10 @@ class PoolWaterHeater(PoolEntity, WaterHeaterEntity, RestoreEntity):
         self._lastHeater = self._poolObject[HEATER_ATTR]
 
     @property
-    def device_state_attributes(self) -> Optional[Dict[str, Any]]:
+    def extra_state_attributes(self) -> Optional[Dict[str, Any]]:
         """Return the state attributes of the entity."""
 
-        state_attributes = super().device_state_attributes
+        state_attributes = super().extra_state_attributes
 
         if self._lastHeater != NULL_OBJNAM:
             state_attributes[self.LAST_HEATER_ATTR] = self._lastHeater

@@ -91,7 +91,7 @@ class PoolLight(PoolEntity, LightEntity):
         """Initialize."""
         super().__init__(entry, controller, poolObject)
         # USE appears to contain extra info like color...
-        self._extraStateAttributes = [USE_ATTR]
+        self._extra_state_attributes = [USE_ATTR]
 
         self._features = 0
 

@@ -224,7 +224,7 @@ class PoolEntity(Entity):
         self._controller = controller
         self._poolObject = poolObject
         self._available = True
-        self._extraStateAttributes = extraStateAttributes
+        self._extra_state_attributes = extraStateAttributes
         self._name = name
         self._attribute_key = attribute_key
         self._enabled_by_default = enabled_by_default
@@ -314,7 +314,7 @@ class PoolEntity(Entity):
         }
 
     @property
-    def device_state_attributes(self) -> Optional[Dict[str, Any]]:
+    def extra_state_attributes(self) -> Optional[Dict[str, Any]]:
         """Return the state attributes of the entity."""
 
         object = self._poolObject
@@ -328,7 +328,7 @@ class PoolEntity(Entity):
         if object.status:
             attributes["Status"] = object.status
 
-        for attribute in self._extraStateAttributes:
+        for attribute in self._extra_state_attributes:
             if object[attribute]:
                 attributes[attribute] = object[attribute]
 

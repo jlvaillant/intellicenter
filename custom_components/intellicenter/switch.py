@@ -107,7 +107,7 @@ class PoolBody(PoolCircuit):
     def __init__(self, entry: ConfigEntry, controller, poolObject):
         """Initialize a Pool body from the underlying circuit."""
         super().__init__(entry, controller, poolObject)
-        self._extraStateAttributes = [VOL_ATTR, HEATER_ATTR, HTMODE_ATTR]
+        self._extra_state_attributes = [VOL_ATTR, HEATER_ATTR, HTMODE_ATTR]
 
     @property
     def icon(self):
