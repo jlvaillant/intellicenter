@@ -327,7 +327,7 @@ class ModelController(BaseController):
                 query.append(items)
                 numAttributes += len(items["keys"])
                 # a query too large can choke the protocol...
-                # we split them in maximum of 250 attributes (arbitrary but seems to work)
+                # we split them in maximum of 50 attributes (arbitrary but seems to work)
                 if numAttributes >= 50:
                     res = await self.sendCmd("RequestParamList", {"objectList": query})
                     self._applyUpdates(res["objectList"])
