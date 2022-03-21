@@ -57,7 +57,7 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
 
         _LOGGER.debug(f"zeroconf discovery {discovery_info}")
 
-        host = discovery_info[CONF_HOST]
+        host = discovery_info.host
 
         if self._host_already_configured(host):
             return self.async_abort(reason="already_configured")
