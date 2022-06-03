@@ -68,7 +68,7 @@
   while the integration is running can lead to some values being off.
 - In general it is recommended to reload the integration where significant changes are done to the pool configuration
 
-[hacs]: https://github.com/custom-components/hacs
+[hacs]: https://github.com/hacs/integration
 [hacsbadge]: https://img.shields.io/badge/HACS-Default-orange
 [releases-shield]: https://img.shields.io/github/v/release/jlvaillant/intellicenter
 [releases]: https://github.com/jlvaillant/intellicenter/releases
