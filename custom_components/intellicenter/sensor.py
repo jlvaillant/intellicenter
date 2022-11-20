@@ -233,8 +233,8 @@ class PoolSensor(PoolEntity, SensorEntity):
         return value
 
     @property
-    def unit_of_measurement(self) -> Optional[str]:
+    def native_unit_of_measurement(self) -> Optional[str]:
         """Return the unit of measurement of this entity, if any."""
         if self._attr_device_class == SensorDeviceClass.TEMPERATURE:
             return self.pentairTemperatureSettings()
-        return self._unit_of_measurement
+        return self._attr_native_unit_of_measurement
