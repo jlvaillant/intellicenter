@@ -4,7 +4,7 @@ from functools import reduce
 import logging
 from typing import Any, Dict
 
-from homeassistant.components.light import ATTR_EFFECT, SUPPORT_EFFECT, LightEntity
+from homeassistant.components.light import ATTR_EFFECT, LightEntity, LightEntityFeature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.typing import HomeAssistantType
 
@@ -101,7 +101,7 @@ class PoolLight(PoolEntity, LightEntity):
         )
 
         if self._lightEffects:
-            self._features |= SUPPORT_EFFECT
+            self._features |= LightEntityFeature.EFFECT
 
     @property
     def supported_features(self) -> int:
