@@ -69,6 +69,6 @@
 - In general it is recommended to reload the integration where significant changes are done to the pool configuration
 
 [hacs]: https://github.com/hacs/integration
-[hacsbadge]: https://img.shields.io/badge/HACS-Default-orange
+[hacsbadge]: https://img.shields.io/badge/HACS-Custom-orange
 [releases-shield]: https://img.shields.io/github/v/release/dwradcliffe/intellicenter
 [releases]: https://github.com/dwradcliffe/intellicenter/releases
