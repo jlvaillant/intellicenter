@@ -1,6 +1,7 @@
 """Protocol for communicating with a Pentair system."""
 
 import asyncio
+import time
 import json
 import logging
 from queue import SimpleQueue
@@ -19,8 +20,6 @@ class ICProtocol(asyncio.Protocol):
     - receiving data from the transport and combining it into a proper json object
     - managing a 'only-one-request-out-one-the-wire' policy
     this is more a "works better that way" thand a real requirement as far as know
-    - sending regular (every 10s) 'ping' requests and closing the connection if 'pong'
-    replies are not received fast enough (we allow 2 outstanding which is generous)
     """
 
     def __init__(self, controller):
@@ -40,9 +39,6 @@ class ICProtocol(asyncio.Protocol):
         # see sendRequest and responseReceived for details
         self._out_pending = 0
         self._out_queue = SimpleQueue()
-
-        # and the number of unacknowledgged ping issued
-        self._num_unacked_pings = 0
 
     def connection_made(self, transport):
         """Handle the callback for a successful connection."""
@@ -109,13 +105,29 @@ class ICProtocol(asyncio.Protocol):
 
         if self._out_pending == 0:
             # nothing is progress, we can transmit the packet
-            self._writeToTransport(request)
+            # and count the new request as pending
+            self._out_pending += 1
+            self._writeToTransport(request) # !!! We can get a responseReceived here, which will not see the incremented _out_pending, and do the wrong thing!
         else:
             # there is already something on the wire, let's queue the request
+            first_pending = self._out_pending == 1
+            # and count the new request as pending
+            self._out_pending += 1
             self._out_queue.put(request)
-
-        # and count the new request as pending
-        self._out_pending += 1
+            _LOGGER.error(f"PROTOCOL: queuing request {request}; {self._out_pending} messages pending")
+            if first_pending:
+                self._out_pending_since = time.time()
+                self._out_pending_first = request
+            elif time.time() - self._out_pending_since > 60:
+                # we have been waiting for a minute for the last response
+                # we assume the connection went bad and abort
+                # unfortunately, some messages will have been lost
+                _LOGGER.error(f"PROTOCOL: waited for response for {self._out_pending_first} for one minute, closing connection; {self._out_pending + 1} messages lost")
+                self._lineBuffer = ""
+                self._out_pending = 0
+                self._out_queue = SimpleQueue()
+                self._transport.close()
+                return
 
     def responseReceived(self) -> None:
         """Handle the flow control part of a received rsponse."""
@@ -123,8 +135,10 @@ class ICProtocol(asyncio.Protocol):
         # we know that a response has been received
         # so, if we have a pending request in the queue
         # we can write it to our transport
+
         if not self._out_queue.empty():
             request = self._out_queue.get()
+            _LOGGER.error(f"PROTOCOL: dequeuing request {request}; {self._out_pending - 1} messages pending")
             self._writeToTransport(request)
         # no matter what, we have now one less request pending
         if self._out_pending:
@@ -134,14 +148,6 @@ class ICProtocol(asyncio.Protocol):
         """Process a given message from IntelliCenter."""
 
         _LOGGER.debug(f"PROTOCOL: processMessage {message}")
-
-        # if message is 'pong', response for a previous 'ping'
-        # do nothing except noting a response was received
-        if message == "pong":
-            self.responseReceived()
-            self._num_unacked_pings -= 1
-            _LOGGER.debug("ping acknowledged")
-            return
 
         # a number of issues could be happening in this code section
         # let's wrap the whole thing in a broad catch statement
