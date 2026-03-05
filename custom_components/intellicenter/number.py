@@ -2,14 +2,9 @@
 
 import logging
 
-from homeassistant.components.number import (
-    NumberEntity,
-    DEFAULT_MIN_VALUE,
-    DEFAULT_MAX_VALUE,
-    DEFAULT_STEP,
-)
+from homeassistant.components.number import NumberEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.helpers.typing import HomeAssistantType
+from homeassistant.core import HomeAssistant
 
 from . import PoolEntity
 from .const import DOMAIN
@@ -30,7 +25,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
-    hass: HomeAssistantType, entry: ConfigEntry, async_add_entities
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities
 ):
     """Load pool numbers based on a config entry."""
 
@@ -83,9 +78,9 @@ class PoolNumber(PoolEntity, NumberEntity):
         entry: ConfigEntry,
         controller: ModelController,
         poolObject: PoolObject,
-        min_value: float = DEFAULT_MIN_VALUE,
-        max_value: float = DEFAULT_MAX_VALUE,
-        step: float = DEFAULT_STEP,
+        min_value: float = 0,
+        max_value: float = 100,
+        step: float = 1,
         **kwargs,
     ):
         """Initialize."""
