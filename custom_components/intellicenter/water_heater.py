@@ -9,8 +9,8 @@ from homeassistant.components.water_heater import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_TEMPERATURE, STATE_IDLE, STATE_OFF, STATE_ON
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.restore_state import RestoreEntity
-from homeassistant.helpers.typing import HomeAssistantType
 
 from . import PoolEntity
 from .const import DOMAIN
@@ -34,7 +34,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
-    hass: HomeAssistantType, entry: ConfigEntry, async_add_entities
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities
 ):
     """Load pool sensors based on a config entry."""
 

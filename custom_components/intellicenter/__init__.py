@@ -1,5 +1,4 @@
 """Pentair IntelliCenter Integration."""
-import asyncio
 import logging
 from typing import Any, Dict, Optional
 
@@ -110,24 +109,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         CONNECTION_SIGNAL = DOMAIN + "_CONNECTION_" + entry.entry_id
 
         def started(self, controller):
-
             _LOGGER.info(f"connected to system: '{controller.systemInfo.propName}'")
-
-            for object in controller.model:
-                _LOGGER.debug(f"   loaded {object}")
-
-            async def setup_platforms():
-                """Set up platforms."""
-                await asyncio.gather(
-                    *[
-                        hass.config_entries.async_forward_entry_setup(entry, platform)
-                        for platform in PLATFORMS
-                    ]
-                )
-
-                # dispatcher.async_dispatcher_send(hass, self.CONNECTION_SIGNAL, True)
-
-            hass.async_create_task(setup_platforms())
 
         @callback
         def reconnected(self, controller):
@@ -153,11 +135,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         handler = Handler(controller)
 
-        await handler.start()
+        await controller.start()
+        handler._firstTime = False
+
+        _LOGGER.info(f"connected to system: '{controller.systemInfo.propName}'")
+
+        for object in controller.model:
+            _LOGGER.debug(f"   loaded {object}")
 
         hass.data.setdefault(DOMAIN, {})
 
         hass.data[DOMAIN][entry.entry_id] = handler
+
+        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
         # subscribe to Home Assistant STOP event to do some cleanup
 
@@ -177,14 +167,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Unload entities for this entry/device.
 
-    all(
-        await asyncio.gather(
-            *[
-                hass.config_entries.async_forward_entry_unload(entry, platform)
-                for platform in PLATFORMS
-            ]
-        )
-    )
+    if not await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
+        return False
 
     # Cleanup
     handler = hass.data[DOMAIN].pop(entry.entry_id, None)
