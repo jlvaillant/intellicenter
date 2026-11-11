@@ -107,13 +107,17 @@ class PoolLight(PoolEntity, LightEntity):
             self._attr_supported_features |= LightEntityFeature.EFFECT
 
     @property
-    def effect_list(self) -> list:
+    def effect_list(self) -> list | None:
         """Return the list of supported effects."""
+        if not self._reversedLightEffects:
+            return None
         return list(self._reversedLightEffects.keys())
 
     @property
-    def effect(self) -> str:
+    def effect(self) -> str | None:
         """Return the current effect."""
+        if not self._lightEffects:
+            return None
         return self._lightEffects.get(self._poolObject[USE_ATTR])
 
     @property
@@ -130,7 +134,7 @@ class PoolLight(PoolEntity, LightEntity):
 
         changes = {STATUS_ATTR: self._poolObject.onStatus}
 
-        if ATTR_EFFECT in kwargs:
+        if ATTR_EFFECT in kwargs and self._reversedLightEffects:
             effect = kwargs[ATTR_EFFECT]
             new_use = self._reversedLightEffects.get(effect)
             if new_use:
