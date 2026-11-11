@@ -149,12 +149,6 @@ class PoolWaterHeater(PoolEntity, WaterHeaterEntity, RestoreEntity):
         """Return the temperature we try to reach."""
         return float(self._poolObject[LOTMP_ATTR])
 
-    # Core before 2026.11 reads the legacy properties.
-    if not hasattr(WaterHeaterEntity, "native_temperature_unit"):
-        temperature_unit = native_temperature_unit
-        current_temperature = native_current_temperature
-        target_temperature = native_target_temperature
-
     def set_temperature(self, **kwargs):
         """Set new target temperatures."""
         target_temperature = kwargs.get(ATTR_TEMPERATURE)
