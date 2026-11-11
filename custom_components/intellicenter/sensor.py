@@ -9,7 +9,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import UnitOfPower
+from homeassistant.const import UnitOfElectricPotential, UnitOfPower
 from homeassistant.core import HomeAssistant
 
 try:
@@ -138,6 +138,7 @@ async def async_setup_entry(
                             controller,
                             obj,
                             device_class=None,
+                            unit_of_measurement="pH",
                             attribute_key=PHVAL_ATTR,
                             name="+ (pH)",
                         )
@@ -149,6 +150,7 @@ async def async_setup_entry(
                             controller,
                             obj,
                             device_class=None,
+                            unit_of_measurement=UnitOfElectricPotential.MILLIVOLT,
                             attribute_key=ORPVAL_ATTR,
                             name="+ (ORP)",
                         )
