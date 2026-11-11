@@ -125,7 +125,7 @@ class PoolWaterHeater(PoolEntity, WaterHeaterEntity, RestoreEntity):
         return WaterHeaterEntityFeature.TARGET_TEMPERATURE | WaterHeaterEntityFeature.OPERATION_MODE
 
     @property
-    def temperature_unit(self):
+    def native_temperature_unit(self):
         """Return the unit of measurement used by the platform."""
         return self.pentairTemperatureSettings()
 
@@ -140,12 +140,12 @@ class PoolWaterHeater(PoolEntity, WaterHeaterEntity, RestoreEntity):
         return 40.0 if self._controller.systemInfo.usesMetric else 104.0
 
     @property
-    def current_temperature(self):
+    def native_current_temperature(self):
         """Return the current temperature."""
         return float(self._poolObject[LSTTMP_ATTR])
 
     @property
-    def target_temperature(self):
+    def native_target_temperature(self):
         """Return the temperature we try to reach."""
         return float(self._poolObject[LOTMP_ATTR])
 
