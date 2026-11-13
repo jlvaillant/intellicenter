@@ -149,6 +149,16 @@ class PoolWaterHeater(PoolEntity, WaterHeaterEntity, RestoreEntity):
         """Return the temperature we try to reach."""
         return float(self._poolObject[LOTMP_ATTR])
 
+    # Home Assistant Core doesn't forward the legacy temperature_unit/
+    # current_temperature/target_temperature names to their native_*
+    # replacements yet (verified against homeassistant 2025.5.1 and 2026.2.3 -
+    # WaterHeaterEntity has no native_* attributes at all on either), so until
+    # that forwarding actually ships, alias the legacy names ourselves.
+    if not hasattr(WaterHeaterEntity, "native_temperature_unit"):
+        temperature_unit = native_temperature_unit
+        current_temperature = native_current_temperature
+        target_temperature = native_target_temperature
+
     def set_temperature(self, **kwargs):
         """Set new target temperatures."""
         target_temperature = kwargs.get(ATTR_TEMPERATURE)

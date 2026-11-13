@@ -5,6 +5,7 @@ from typing import Any, Optional
 
 from homeassistant.config_entries import ConfigFlow
 from homeassistant.const import CONF_HOST, CONF_NAME
+from homeassistant.data_entry_flow import AbortFlow
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.typing import ConfigType
 import voluptuous as vol
@@ -47,6 +48,8 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
             )
         except CannotConnect:
             return self._show_setup_form({"base": "cannot_connect"})
+        except AbortFlow:
+            raise
         except Exception:  # pylint: disable=broad-except
             return self._show_setup_form({"base": "cannot_connect"})
 
@@ -80,6 +83,8 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
 
         except CannotConnect:
             return self.async_abort(reason="cannot_connect")
+        except AbortFlow:
+            raise
         except Exception:  # pylint: disable=broad-except
             return self.async_abort(reason="unknown")
 
@@ -99,6 +104,8 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
 
         except CannotConnect:
             return self.async_abort(reason="cannot_connect")
+        except AbortFlow:
+            raise
         except Exception:  # pylint: disable=broad-except
             return self.async_abort(reason="unknown")
 

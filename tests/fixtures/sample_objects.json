@@ -1,0 +1,432 @@
+[
+  {
+    "objnam": "X0052",
+    "params": {
+      "SNAME": "Solar",
+      "PARENT": "00000",
+      "STATUS": "OFF",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "Generic"
+    }
+  },
+  {
+    "objnam": "X0053",
+    "params": {
+      "SNAME": "Pool Heat Enable",
+      "PARENT": "00000",
+      "STATUS": "OFF",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "Generic"
+    }
+  },
+  {
+    "objnam": "X0054",
+    "params": {
+      "SNAME": "All Lights On",
+      "PARENT": "00000",
+      "STATUS": "OFF",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "Generic"
+    }
+  },
+  {
+    "objnam": "X0056",
+    "params": {
+      "SNAME": "Unassigned",
+      "PARENT": "00000",
+      "STATUS": "OFF",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "Generic"
+    }
+  },
+  {
+    "objnam": "_5451",
+    "params": {
+      "SNAME": "Test Pool System",
+      "MODE": "ENGLISH",
+      "VACFLO": "OFF",
+      "OBJTYP": "SYSTEM"
+    }
+  },
+  {
+    "objnam": "X0055",
+    "params": {
+      "SNAME": "All Lights Off",
+      "PARENT": "00000",
+      "STATUS": "OFF",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "Generic"
+    }
+  },
+  {
+    "objnam": "X0051",
+    "params": {
+      "SNAME": "Heater",
+      "PARENT": "00000",
+      "STATUS": "OFF",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "Generic"
+    }
+  },
+  {
+    "objnam": "X0039",
+    "params": {
+      "SNAME": "Pump Speed +",
+      "PARENT": "00000",
+      "STATUS": "OFF",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "Generic"
+    }
+  },
+  {
+    "objnam": "X0040",
+    "params": {
+      "SNAME": "Pump Speed -",
+      "PARENT": "00000",
+      "STATUS": "OFF",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "Generic"
+    }
+  },
+  {
+    "objnam": "X0050",
+    "params": {
+      "SNAME": "Cleaners",
+      "PARENT": "00000",
+      "STATUS": "OFF",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "Generic"
+    }
+  },
+  {
+    "objnam": "X0043",
+    "params": {
+      "SNAME": "Cleaner",
+      "PARENT": "00000",
+      "STATUS": "OFF",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "Generic"
+    }
+  },
+  {
+    "objnam": "X0044",
+    "params": {
+      "SNAME": "Pool Heater",
+      "PARENT": "00000",
+      "STATUS": "OFF",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "Generic"
+    }
+  },
+  {
+    "objnam": "X0047",
+    "params": {
+      "SNAME": "Pool/Spa",
+      "PARENT": "00000",
+      "STATUS": "OFF",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "Generic"
+    }
+  },
+  {
+    "objnam": "X0045",
+    "params": {
+      "SNAME": "Spa Heater",
+      "PARENT": "00000",
+      "STATUS": "OFF",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "Generic"
+    }
+  },
+  {
+    "objnam": "X0046",
+    "params": {
+      "SNAME": "Freeze",
+      "PARENT": "00000",
+      "STATUS": "OFF",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "Generic"
+    }
+  },
+  {
+    "objnam": "_A110",
+    "params": {
+      "SNAME": "All Lights Off",
+      "PARENT": "00000",
+      "FEATR": "OFF",
+      "STATUS": "PERMIT",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "ALL"
+    }
+  },
+  {
+    "objnam": "_A111",
+    "params": {
+      "SNAME": "All Lights On",
+      "PARENT": "00000",
+      "FEATR": "OFF",
+      "STATUS": "PERMIT",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "ALL"
+    }
+  },
+  {
+    "objnam": "_A135",
+    "params": {
+      "SNAME": "Air Sensor",
+      "PARENT": "00000",
+      "SOURCE": "83",
+      "OBJTYP": "SENSE",
+      "SUBTYP": "AIR"
+    }
+  },
+  {
+    "objnam": "_FEA2",
+    "params": {
+      "SNAME": "Freeze",
+      "STATUS": "OFF",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "FRZ"
+    }
+  },
+  {
+    "objnam": "X0038",
+    "params": {
+      "SNAME": "Heat Enable",
+      "PARENT": "00000",
+      "STATUS": "OFF",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "Generic"
+    }
+  },
+  {
+    "objnam": "C0008",
+    "params": {
+      "SNAME": "AUX 6",
+      "PARENT": "M0102",
+      "USE": "WHITER",
+      "FEATR": "OFF",
+      "STATUS": "OFF",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "GENERIC"
+    }
+  },
+  {
+    "objnam": "C0009",
+    "params": {
+      "SNAME": "AUX 7",
+      "PARENT": "M0102",
+      "USE": "WHITER",
+      "FEATR": "OFF",
+      "STATUS": "OFF",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "GENERIC"
+    }
+  },
+  {
+    "objnam": "X0037",
+    "params": {
+      "SNAME": "Heat Boost",
+      "PARENT": "00000",
+      "STATUS": "OFF",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "Generic"
+    }
+  },
+  {
+    "objnam": "H0001",
+    "params": {
+      "SNAME": "Gas Heater",
+      "PARENT": "M0101",
+      "BODY": "B1101 B1202",
+      "LISTORD": "1",
+      "OBJTYP": "HEATER",
+      "SUBTYP": "GENERIC"
+    }
+  },
+  {
+    "objnam": "C0007",
+    "params": {
+      "SNAME": "Spa Light",
+      "PARENT": "M0102",
+      "USE": "100",
+      "FEATR": "OFF",
+      "STATUS": "OFF",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "GLOWT"
+    }
+  },
+  {
+    "objnam": "B1101",
+    "params": {
+      "SNAME": "Pool",
+      "PARENT": "M0101",
+      "VOL": "15000",
+      "HTMODE": "0",
+      "LSTTMP": "88",
+      "LOTMP": "88",
+      "HEATER": "H0001",
+      "STATUS": "ON",
+      "OBJTYP": "BODY",
+      "SUBTYP": "POOL"
+    }
+  },
+  {
+    "objnam": "B1202",
+    "params": {
+      "SNAME": "Spa",
+      "PARENT": "M0102",
+      "VOL": "1000",
+      "HTMODE": "0",
+      "LSTTMP": "88",
+      "LOTMP": "96",
+      "HEATER": "H0001",
+      "STATUS": "OFF",
+      "OBJTYP": "BODY",
+      "SUBTYP": "SPA"
+    }
+  },
+  {
+    "objnam": "C0006",
+    "params": {
+      "SNAME": "Pool",
+      "PARENT": "M0101",
+      "USE": "WHITER",
+      "FEATR": "OFF",
+      "STATUS": "ON",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "POOL"
+    }
+  },
+  {
+    "objnam": "C0001",
+    "params": {
+      "SNAME": "Spa",
+      "PARENT": "M0102",
+      "USE": "WHITER",
+      "FEATR": "OFF",
+      "STATUS": "OFF",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "SPA"
+    }
+  },
+  {
+    "objnam": "C0002",
+    "params": {
+      "SNAME": "Air Blower 1",
+      "PARENT": "M0101",
+      "USE": "WHITER",
+      "FEATR": "ON",
+      "STATUS": "OFF",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "GENERIC"
+    }
+  },
+  {
+    "objnam": "C0005",
+    "params": {
+      "SNAME": "Pool Lights",
+      "PARENT": "M0101",
+      "USE": "100",
+      "FEATR": "OFF",
+      "STATUS": "OFF",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "GLOWT"
+    }
+  },
+  {
+    "objnam": "C0003",
+    "params": {
+      "SNAME": "Swim Jets",
+      "PARENT": "M0101",
+      "USE": "WHITER",
+      "FEATR": "ON",
+      "STATUS": "OFF",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "GENERIC"
+    }
+  },
+  {
+    "objnam": "C0004",
+    "params": {
+      "SNAME": "Swim Jets",
+      "PARENT": "M0101",
+      "USE": "WHITER",
+      "FEATR": "ON",
+      "STATUS": "OFF",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "GENERIC"
+    }
+  },
+  {
+    "objnam": "X0036",
+    "params": {
+      "SNAME": "Hybrid",
+      "PARENT": "00000",
+      "STATUS": "OFF",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "Generic"
+    }
+  },
+  {
+    "objnam": "X0034",
+    "params": {
+      "SNAME": "Heat Pump",
+      "PARENT": "00000",
+      "STATUS": "OFF",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "Generic"
+    }
+  },
+  {
+    "objnam": "X0035",
+    "params": {
+      "SNAME": "UltraTemp",
+      "PARENT": "00000",
+      "STATUS": "OFF",
+      "OBJTYP": "CIRCUIT",
+      "SUBTYP": "Generic"
+    }
+  },
+  {
+    "objnam": "PMP01",
+    "params": {
+      "SNAME": "VSF",
+      "GPM": "46",
+      "PWR": "879",
+      "STATUS": "10",
+      "RPM": "2600",
+      "OBJTYP": "PUMP",
+      "SUBTYP": "VSF"
+    }
+  },
+  {
+    "objnam": "SSW11",
+    "params": {
+      "SNAME": "Water Sensor 1",
+      "PARENT": "00000",
+      "SOURCE": "88",
+      "OBJTYP": "SENSE",
+      "SUBTYP": "POOL"
+    }
+  },
+  {
+    "objnam": "SCH00",
+    "params": {
+      "SNAME": "Pool",
+      "VACFLO": "OFF",
+      "ACT": "ON",
+      "OBJTYP": "SCHED"
+    }
+  },
+  {
+    "objnam": "SSS11",
+    "params": {
+      "SNAME": "Solar Sensor 1",
+      "PARENT": "00000",
+      "SOURCE": "156",
+      "OBJTYP": "SENSE",
+      "SUBTYP": "SOLAR"
+    }
+  }
+]

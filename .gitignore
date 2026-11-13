@@ -2,3 +2,5 @@
 .DS_Store
 *.code-workspace
 .vscode
+.coverage
+.pytest_cache
